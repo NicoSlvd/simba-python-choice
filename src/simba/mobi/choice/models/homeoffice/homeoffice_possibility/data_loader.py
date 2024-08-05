@@ -6,9 +6,9 @@ import numpy as np
 import openmatrix as omx
 import pandas as pd
 
-from simba.mobi.choice.models.homeoffice.constants import hh_columns
-from simba.mobi.choice.models.homeoffice.constants import zp_columns
-from simba.mobi.choice.models.homeoffice.model_definition import (
+from simba.mobi.choice.models.homeoffice.homeoffice_possibility.constants import hh_columns
+from simba.mobi.choice.models.homeoffice.homeoffice_possibility.constants import zp_columns
+from simba.mobi.choice.models.homeoffice.homeoffice_possibility.model_definition import (
     define_telecommuting_variable,
 )
 from simba.mobi.mzmv.utils_mtmc.get_mtmc_files import get_hh
@@ -18,22 +18,31 @@ from simba.mobi.mzmv.utils_mtmc.get_mtmc_files import get_zp
 
 def get_data(input_directory: Path) -> pd.DataFrame:
     path_to_mtmc_data = r"path_to_transport_and_mobility_microcensus_folder"
-    path_to_data_folder_for_all_years = input_directory / "2015_2020_2021"
+    #path_to_data_folder_for_all_years = input_directory / "2015_2020_2021"
+    path_to_data_folder_for_all_years = input_directory / "2015"
+    
     if os.path.isfile(path_to_data_folder_for_all_years / "persons.csv"):
-        df_zp_2015_2020_2021 = pd.read_csv(
+        #df_zp_2015_2020_2021 = pd.read_csv(
+        #    path_to_data_folder_for_all_years / "persons.csv", sep=";"
+        #)
+        df_zp_2015 = pd.read_csv(
             path_to_data_folder_for_all_years / "persons.csv", sep=";"
         )
     else:
         df_zp_2015 = get_data_per_year(2015, input_directory, path_to_mtmc_data)
-        df_zp_2020 = get_data_per_year(2020, input_directory, path_to_mtmc_data)
-        df_zp_2021 = get_data_per_year(2021, input_directory, path_to_mtmc_data)
-        df_zp_2015_2020 = merge_data_files(df_zp_2015, df_zp_2020)
-        df_zp_2015_2020_2021 = merge_data_files(df_zp_2015_2020, df_zp_2021)
-        path_to_data_folder_for_all_years.mkdir(parents=True, exist_ok=True)
-        df_zp_2015_2020_2021.to_csv(
+        #df_zp_2020 = get_data_per_year(2020, input_directory, path_to_mtmc_data)
+        #df_zp_2021 = get_data_per_year(2021, input_directory, path_to_mtmc_data)
+        #df_zp_2015_2020 = merge_data_files(df_zp_2015, df_zp_2020)
+        #df_zp_2015_2020_2021 = merge_data_files(df_zp_2015_2020, df_zp_2021)
+        #path_to_data_folder_for_all_years.mkdir(parents=True, exist_ok=True)
+        #df_zp_2015_2020_2021.to_csv(
+        #    path_to_data_folder_for_all_years / "persons.csv", sep=";", index=False
+        #)
+    #return df_zp_2015_2020_2021
+        df_zp_2015.to_csv(
             path_to_data_folder_for_all_years / "persons.csv", sep=";", index=False
         )
-    return df_zp_2015_2020_2021
+    return df_zp_2015
 
 
 def merge_data_files(df_zp1: pd.DataFrame, df_zp2: pd.DataFrame) -> pd.DataFrame:
