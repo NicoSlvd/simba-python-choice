@@ -6,9 +6,9 @@ import numpy as np
 import openmatrix as omx
 import pandas as pd
 
-from simba.mobi.choice.models.homeoffice.homeoffice_possibility.constants import hh_columns
-from simba.mobi.choice.models.homeoffice.homeoffice_possibility.constants import zp_columns
-from simba.mobi.choice.models.homeoffice.homeoffice_possibility.model_definition import (
+from simba.mobi.choice.models.homeoffice.homeoffice_possibility.constants_sbb import hh_columns
+from simba.mobi.choice.models.homeoffice.homeoffice_possibility.constants_sbb import zp_columns
+from simba.mobi.choice.models.homeoffice.homeoffice_possibility.model_definition_sbb import (
     define_telecommuting_variable,
 )
 from simba.mobi.mzmv.utils_mtmc.get_mtmc_files import get_hh

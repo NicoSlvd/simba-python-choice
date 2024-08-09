@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from simba.mobi.choice.models.homeoffice.homeoffice_possibility.data_loader import get_data
-from simba.mobi.choice.models.homeoffice.homeoffice_possibility.descriptive_stats import descriptive_statistics
-from simba.mobi.choice.models.homeoffice.homeoffice_possibility.model_estimation import (
+from simba.mobi.choice.models.homeoffice.homeoffice_possibility.data_loader_sbb import get_data
+from simba.mobi.choice.models.homeoffice.homeoffice_possibility.descriptive_stats_sbb import descriptive_statistics
+from simba.mobi.choice.models.homeoffice.homeoffice_possibility.model_estimation_sbb import (
     estimate_choice_model_telecommuting,
 )
 
