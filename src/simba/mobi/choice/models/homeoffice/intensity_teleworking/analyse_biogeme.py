@@ -1,19 +1,21 @@
+from biogeme.results import bioResults
 import pandas as pd
 from biogeme.models import ordered_logit
 import biogeme.biogeme as bio
 from biogeme.expressions import Beta, Variable, Elem, log
 import biogeme.database as db
 import os
+import numpy as np
 
 # Assume that the data is loaded into a Pandas DataFrame named 'df'.
 # You need to replace 'your_dataframe.csv' with your actual data file.
 
 # Load your data
-df = pd.read_csv('input/data/2015/persons_cleaned_train.csv')
+df = pd.read_csv('input/data/2015/persons_cleaned_test.csv')
 
-database = db.Database('persons_cleaned_train', df)
+database_test = db.Database('persons_cleaned_test', df)
 
-globals().update(database.variables)
+globals().update(database_test.variables)
 
 # Define variables using the Biogeme Variable class
 age = Variable('age')
@@ -410,23 +412,15 @@ the_proba = ordered_logit(
 )
 
 the_chosen_proba = Elem(the_proba, CHOICE)
+results = bioResults(pickle_file="output/data/intensity_teleworking_ordinal_logit_train_all_sign_5.pickle")
 
-logprob = log(the_chosen_proba)
+beta_values = results.getBetaValues()
 
-current_dir = os.getcwd()
+biogeme_obj = bio.BIOGEME(database_test, the_chosen_proba)
+biogeme_obj.generate_pickle = False
+biogeme_obj.generate_html = False
 
-os.chdir('output/data/')
+biogeme_obj.modelName = "intensity_teleworking_ordinal_logit_test"
+results_ = biogeme_obj.simulate(beta_values)
 
-# Create the biogeme object
-biogeme = bio.BIOGEME(database, logprob)
-biogeme.modelName = "intensity_teleworking_ordinal_logit_train"
-biogeme.generate_pickle = True
-biogeme.generate_html = True
-
-# Estimate the parameters
-results = biogeme.estimate()
-
-# Print the results
-print(results.getEstimatedParameters())
-
-os.chdir(current_dir)
+print(np.log(results_).mean())
