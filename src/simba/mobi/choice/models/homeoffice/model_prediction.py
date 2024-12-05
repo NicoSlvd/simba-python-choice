@@ -27,13 +27,11 @@ def run_estimation(
     df_zp: pd.DataFrame,
     output_directory: Path,
     intensity_cutoff: int = None,
-    df_zp_test: pd.DataFrame = None,
 ) -> None:
     """
     :author: Antonin Danalet, based on the example '01logit.py' by Michel Bierlaire, EPFL, on biogeme.epfl.ch
 
-    A binary logit model or ordinal logit model if intensity_cutoff is specified on the ability to work from home.
-    intensity_cutoff is a percentage that represents the boundaries of the telecommuting intensity categories."""
+    A binary logit model on the ability to work from home."""
     database = db.Database("persons", df_zp)
 
     define_variables(database)
@@ -114,17 +112,63 @@ def run_estimation(
     # Definition of the model. This is the contribution of each observation to the log likelihood function.
     # Choice variable: "telecommuting"
     if intensity_cutoff:
-        model_name = "wfh_intensity_model_sbb"
-
-        the_proba = models.ordered_logit(
+        the_proba = ordered_logit(
             continuous_value=V,
-            list_of_discrete_values=[i for i in range(100 // intensity_cutoff + 1)],
+            list_of_discrete_values=[0, 1, 2, 3, 4, 5],
             tau_parameter=tau_1,
         )
 
-        the_chosen_proba = Elem(the_proba, telecommuting_intensity)
+        the_chosen_proba = Elem(the_proba, CHOICE)
+        results = bioResults(pickle_file="output/data/intensity_teleworking_ordinal_logit_train_all_sign_5.pickle")
 
-        logprob = log(the_chosen_proba)
+        beta_values = results.getBetaValues()
+
+        biogeme_obj = bio.BIOGEME(database_test, the_chosen_proba)
+        biogeme_obj.generate_pickle = False
+        biogeme_obj.generate_html = False
+
+        biogeme_obj.modelName = "intensity_teleworking_ordinal_logit_test"
+        results_ = biogeme_obj.simulate(beta_values)
+
+        print(np.log(results_).mean())
+
+        the_proba = ordered_logit(
+            continuous_value=V,
+            list_of_discrete_values=[0, 1, 2, 3, 4, 5],
+            tau_parameter=tau_1,
+        )
+        # Generate individual expressions for each probability
+        proba_0 = Elem(the_proba, 0)
+        proba_1 = Elem(the_proba, 1)
+        proba_2 = Elem(the_proba, 2)
+        proba_3 = Elem(the_proba, 3)
+        proba_4 = Elem(the_proba, 4)
+        proba_5 = Elem(the_proba, 5)
+
+        all_probs = {"prob_0": proba_0, "prob_1": proba_1, "prob_2": proba_2, "prob_3": proba_3, "prob_4": proba_4, "prob_5": proba_5}
+
+        # Load beta values from training results
+        results = bioResults(pickle_file="output/data/intensity_teleworking_ordinal_logit_train_all_sign_5.pickle")
+        beta_values = results.getBetaValues()
+
+
+        # Create the BIOGEME object, using all_probabilities for simulation
+        biogeme_obj = bio.BIOGEME(database_test, all_probs)
+        biogeme_obj.generate_pickle = False
+        biogeme_obj.generate_html = False
+        biogeme_obj.modelName = "intensity_teleworking_ordinal_logit_test"
+
+        # Simulate probabilities for each class
+        results_ = biogeme_obj.simulate(beta_values)
+
+        print(np.abs(df['work_home_days'] - np.argmax(results_, axis=1)).mean())
+        print(np.mean((df['work_home_days'] - np.argmax(results_, axis=1))**2))
+
+        distance_squared = np.array([[(i - choice)**2 for i in range(6)] for choice in df['work_home_days']])
+        distance_abs = np.array([[np.abs(i - choice) for i in range(6)] for choice in df['work_home_days']])
+
+        print(np.mean(np.sum(distance_squared * results_.values, axis=1)))
+        print(np.mean(np.sum(distance_abs * results_.values, axis=1)))
 
     else:
         model_name = "wfh_possibility_model_sbb"
@@ -145,7 +189,3 @@ def run_estimation(
         "parameters_dcm_wfh_" + datetime.now().strftime("%Y_%m_%d-%H_%M") + ".csv"
     )
     df_parameters.to_csv(output_directory / file_name)
-
-    if df_zp_test is not None and intensity_cutoff:
-
- 

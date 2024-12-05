@@ -13,6 +13,19 @@ def define_telecommuting_variable(row):
     return telecommuting
 
 
+def define_telecommuting_intensity_variable(row, intensity_cutoff):
+    """Defines an ordinal choice variable which represents the intensity of telecommuting.
+    The variable is defined as i if telecommuting_intensity is between i*intensity_cutoff and (i+1)*intensity_cutoff.
+    for i up to 100/intensity_cutoff. No telecommuting is represented by 0."""
+    if row["percentage_telecommuting"] > 0:
+        telecommuting_intensity = (
+            int(row["percentage_telecommuting"] / intensity_cutoff) + 1
+        )
+    else:
+        telecommuting_intensity = 0
+    return telecommuting_intensity
+
+
 def define_variables(database: pd.DataFrame) -> None:
     globals().update(database.variables)
 
@@ -161,14 +174,14 @@ def define_variables(database: pd.DataFrame) -> None:
     )
 
 
-def get_dict_betas() -> dict:
+def get_dict_betas(intensity_cutoff: int = None) -> dict:
     # Parameters to be estimated (global)
     dict_betas = {
         "alternative_specific_constant": Beta(
             "alternative_specific_constant", 0, None, None, 0
         ),
-        "scale_2020": Beta("scale_2020", 1, 0.001, None, 0),
-        "scale_2021": Beta("scale_2021", 1, 0.001, None, 0),
+        "scale_2020": Beta("scale_2020", 1, 0.001, None, 1),  # not estimated
+        "scale_2021": Beta("scale_2021", 1, 0.001, None, 1),  # not estimated
         # person attributes
         "b_executives_1520": Beta("b_executives_1520", 0, None, None, 0),
         "b_german_speaking": Beta("b_german_speaking", 0, None, None, 0),
@@ -224,4 +237,19 @@ def get_dict_betas() -> dict:
             "beta_accsib_home_not_NA_10_24_21", 0, None, None, 1
         ),
     }
+
+    # thresholds
+    if intensity_cutoff:
+        dict_betas["tau_1"] = Beta(
+            "tau_1", -2, None, 0, 0
+        )  # threshold 1 <= 0 according to biogeme ordinal logit model
+        for i in range(1, 100 // intensity_cutoff):
+            dict_betas[f"diff_{i}{i+1}"] = Beta(
+                f"diff_{i}{i+1}", 1, 0, None, 0
+            )  # difference between subsequent thresholds
+
+        dict_betas["alternative_specific_constant"] = Beta(
+            "alternative_specific_constant", 0, None, None, 1
+        )  # not estimated, asc is implicitly estimated within the thresholds
+
     return dict_betas

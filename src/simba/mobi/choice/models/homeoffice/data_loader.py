@@ -5,7 +5,10 @@ import geopandas
 import numpy as np
 import openmatrix as omx
 import pandas as pd
-from model_definition import define_telecommuting_variable
+from model_definition import (
+    define_telecommuting_variable,
+    define_telecommuting_intensity_variable,
+)
 
 from simba.mobi.choice.models.homeoffice.constants import hh_columns
 from simba.mobi.choice.models.homeoffice.constants import zp_columns
@@ -16,16 +19,16 @@ from simba.mobi.mzmv.utils_mtmc.get_mtmc_files import get_hhp
 from simba.mobi.mzmv.utils_mtmc.get_mtmc_files import get_zp
 
 
-def get_data(input_directory: Path) -> pd.DataFrame:
+def get_data(input_directory: Path, intensity_cutoff: int = None) -> pd.DataFrame:
     path_to_data_folder_for_all_years = input_directory / "2015_2020_2021"
     if os.path.isfile(path_to_data_folder_for_all_years / "persons.csv"):
         df_zp_2015_2020_2021 = pd.read_csv(
             path_to_data_folder_for_all_years / "persons.csv", sep=";"
         )
     else:
-        df_zp_2015 = get_data_per_year(2015)
-        df_zp_2020 = get_data_per_year(2020)
-        df_zp_2021 = get_data_per_year(2021)
+        df_zp_2015 = get_data_per_year(2015, intensity_cutoff=intensity_cutoff)
+        df_zp_2020 = get_data_per_year(2020, intensity_cutoff=intensity_cutoff)
+        df_zp_2021 = get_data_per_year(2021, intensity_cutoff=intensity_cutoff)
         df_zp_2015_2020 = merge_data_files(df_zp_2015, df_zp_2020)
         df_zp_2015_2020_2021 = merge_data_files(df_zp_2015_2020, df_zp_2021)
         path_to_data_folder_for_all_years.mkdir(parents=True, exist_ok=True)
@@ -46,11 +49,11 @@ def merge_data_files(df_zp1: pd.DataFrame, df_zp2: pd.DataFrame) -> pd.DataFrame
     return df_merged
 
 
-def get_data_per_year(year: int) -> pd.DataFrame:
+def get_data_per_year(year: int, intensity_cutoff: int = None) -> pd.DataFrame:
     # Input daten
-    path_to_mobi_zones = (r"path_to_mobi_zones")
-    path_to_npvm_zones = (r"path_to_npvm_zones")
-    path_to_skim_file = (r"path_to_skim_file")
+    path_to_mobi_zones = r"path_to_mobi_zones"
+    path_to_npvm_zones = r"path_to_npvm_zones"
+    path_to_skim_file = r"path_to_skim_file"
 
     # Generate the data
     df_zp = generate_data_file(
@@ -58,6 +61,7 @@ def get_data_per_year(year: int) -> pd.DataFrame:
         path_to_mobi_zones,
         path_to_npvm_zones,
         path_to_skim_file,
+        intensity_cutoff=intensity_cutoff,
     )
     df_zp["year"] = year
     """ Test that no column contains NA values """
@@ -72,6 +76,7 @@ def generate_data_file(
     path_to_mobi_zones: Path,
     path_to_npvm_zones: Path,
     path_to_skim_file: Path,
+    intensity_cutoff: int = None,
 ) -> pd.DataFrame:
     """This function reads the  data about the person.
     It then joins them with the data about the household and the spatial typology.
@@ -141,9 +146,9 @@ def generate_data_file(
         ),  # MTMC: Angestellt als Mitglied von der Direktion
         "work_position",
     ] = 1  # SynPop: Qualifiziert
-    df_zp.loc[
-        df_zp["employment_status"] == 5, "work_position"  # MTMC: Lehrling
-    ] = 3  # NPVM: Apprentice
+    df_zp.loc[df_zp["employment_status"] == 5, "work_position"] = (  # MTMC: Lehrling
+        3  # NPVM: Apprentice
+    )
     df_zp.loc[
         df_zp["f41100_01"] == 3,  # MTMC: Angestellt als Mitglied von der Direktion
         "work_position",
@@ -182,6 +187,13 @@ def generate_data_file(
     df_zp.drop(df_zp[df_zp.telecommuting_is_possible < 0].index, inplace=True)
     # ''' Define the variable home office as "possibility to do home office" '''
     df_zp["telecommuting"] = df_zp.apply(define_telecommuting_variable, axis=1)
+
+    if intensity_cutoff:
+        df_zp["telecommuting_intensity"] = df_zp.apply(
+            define_telecommuting_intensity_variable,
+            axis=1,
+            intensity_cutoff=intensity_cutoff,
+        )
 
     """ Define the business sectors:
     The 10 business sectors are an aggregation of the General Classification of Economic Activities (NOGA 2008)
