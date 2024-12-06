@@ -665,7 +665,10 @@ def plot_parameters(
                         f"{save_file}_{utility_names[u]}_{f}.png", facecolor="white"
                     )
 
-                plt.show()
+                if no_output:
+                    pass
+                else:
+                    plt.show()
 
     if group_feature:
         for f, indices in group_feature.items():
@@ -743,7 +746,7 @@ def plot_parameters(
             else:
                 plt.xlim(
                     [
-                        0 - 0.05 * weights_arranged[str(i)][f]["Splitting points"][-1],
+                        0 - 0.05 * weights_arranged[str(i)][f]["Splitting points"][0],
                         weights_arranged[str(i)][f]["Splitting points"][-1] * 1.05,
                     ]
                 )

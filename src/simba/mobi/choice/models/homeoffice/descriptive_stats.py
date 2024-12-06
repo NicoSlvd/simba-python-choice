@@ -95,67 +95,31 @@ def emse(y_true, y_pred, intensity_cutoff):
     distance_squared = np.array([[(i - y)**2 for i in range(100 // intensity_cutoff + 1)] for y in y_true])
     return np.mean(np.sum(distance_squared * y_pred, axis=1))
     
-def analyse_preds(df_zp_test, intensity_cutoff, results, V, tau_1):
+def cel(y_true, y_pred):
+    index = range(y_pred.shape[0])
+    return - np.mean(np.log(y_pred(index, y_true)))
 
-    database_test = db.Database("persons_test", df_zp_test)
-
-    define_variables(database_test)
+def bin_cel(y_true, y_pred):
+    if y_pred.shape[1] == 2:
+        return - np.mean(np.log(y_pred[range(y_pred.shape[0]), y_true]))
+    return - np.mean(np.log(y_pred))
+    
+def calculate_metrics(y_true, y_pred, intensity_cutoff = None):
+    metrics = {}
 
     if intensity_cutoff:
-        the_proba = models.ordered_logit(
-            continuous_value=V,
-            list_of_discrete_values=[0, 1, 2, 3, 4, 5],
-            tau_parameter=tau_1,
-        )
+        cel_value = cel(y_true, y_pred)
+        mae_value = mae(y_true, y_pred)
+        mse_value = mse(y_true, y_pred)
+        emae_value = emae(y_true, y_pred, intensity_cutoff)
+        emse_value = emse(y_true, y_pred, intensity_cutoff)
+        metrics["cel"] = cel_value
+        metrics["mae"] = mae_value
+        metrics["mse"] = mse_value
+        metrics["emae"] = emae_value
+        metrics["emse"] = emse_value
+    else:
+        cel_value = bin_cel(y_true, y_pred)
+        metrics["cel"] = cel_value
 
-        the_chosen_proba = Elem(the_proba, telecommuting_intensity)
-
-        beta_values = results.getBetaValues()
-
-        biogeme_obj = bio.BIOGEME(database_test, the_chosen_proba)
-        biogeme_obj.generate_pickle = False
-        biogeme_obj.generate_html = False
-
-        biogeme_obj.modelName = "intensity_teleworking_ordinal_logit_test"
-        results_ = biogeme_obj.simulate(beta_values)
-
-        print(np.log(results_).mean())
-
-        the_proba = ordered_logit(
-            continuous_value=V,
-            list_of_discrete_values=[0, 1, 2, 3, 4, 5],
-            tau_parameter=tau_1,
-        )
-        # Generate individual expressions for each probability
-        proba_0 = Elem(the_proba, 0)
-        proba_1 = Elem(the_proba, 1)
-        proba_2 = Elem(the_proba, 2)
-        proba_3 = Elem(the_proba, 3)
-        proba_4 = Elem(the_proba, 4)
-        proba_5 = Elem(the_proba, 5)
-
-        all_probs = {"prob_0": proba_0, "prob_1": proba_1, "prob_2": proba_2, "prob_3": proba_3, "prob_4": proba_4, "prob_5": proba_5}
-
-        # Load beta values from training results
-        results = bioResults(pickle_file="output/data/intensity_teleworking_ordinal_logit_train_all_sign_5.pickle")
-        beta_values = results.getBetaValues()
-
-
-        # Create the BIOGEME object, using all_probabilities for simulation
-        biogeme_obj = bio.BIOGEME(database_test, all_probs)
-        biogeme_obj.generate_pickle = False
-        biogeme_obj.generate_html = False
-        biogeme_obj.modelName = "intensity_teleworking_ordinal_logit_test"
-
-        # Simulate probabilities for each class
-        results_ = biogeme_obj.simulate(beta_values)
-
-        print(np.abs(df['work_home_days'] - np.argmax(results_, axis=1)).mean())
-        print(np.mean((df['work_home_days'] - np.argmax(results_, axis=1))**2))
-
-        distance_squared = np.array([[(i - choice)**2 for i in range(6)] for choice in df['work_home_days']])
-        distance_abs = np.array([[np.abs(i - choice) for i in range(6)] for choice in df['work_home_days']])
-
-        print(np.mean(np.sum(distance_squared * results_.values, axis=1)))
-        print(np.mean(np.sum(distance_abs * results_.values, axis=1)))
-        
+    return metrics

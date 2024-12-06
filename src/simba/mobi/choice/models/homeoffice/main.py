@@ -6,14 +6,16 @@ from sklearn.model_selection import train_test_split
 from simba.mobi.choice.models.homeoffice.data_loader import get_data
 from simba.mobi.choice.models.homeoffice.descriptive_stats import descriptive_statistics
 from simba.mobi.choice.models.homeoffice.model_estimation import (
-    estimate_choice_model_telecommuting,
+    estimate_choice_model_telecommuting
 )
-
-# pour demain: 
-# - finir d'implementer biogeme pour les predictions
-# - implementer rumboost pour training et predictions
+from simba.mobi.choice.models.homeoffice.rumboost_estimation import (
+    train_rumboost_telecommuting
+)
+  
+#) pour demain:
 # - ajouter les requirements
 # - shell script pour lancer les commandes
+# - tester avec fake data?
 
 
 def run_home_office_in_microcensus(
@@ -51,10 +53,10 @@ def run_home_office_in_microcensus(
     )
     output_directory.mkdir(parents=True, exist_ok=True)
     if estimator == "dcm":
-        estimate_choice_model_telecommuting(df_zp_train, output_directory, intensity_cutoff, df_zp_test)
+        estimate_choice_model_telecommuting(df_zp_train, output_directory, intensity_cutoff, df_zp_test, year)
         # descriptive_statistics(output_directory)
     elif estimator == "rumboost":
-        raise NotImplementedError("RUMBoost is not implemented yet")
+        train_rumboost_telecommuting(df_zp_train, output_directory, df_zp_test, intensity_cutoff)
 
 
 if __name__ == "__main__":
@@ -105,6 +107,7 @@ if __name__ == "__main__":
         default=0.2,
         help="Fraction of the data used for testing",
     )
+
     args = argparser.parse_args()
 
     run_home_office_in_microcensus(

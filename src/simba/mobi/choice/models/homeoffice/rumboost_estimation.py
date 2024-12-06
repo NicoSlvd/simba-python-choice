@@ -1,168 +1,129 @@
-import sys
-sys.path.append('../../../../../../../../rumboost-dev/')
-
-from rumboost.rumboost import rum_train
+from simba.mobi.rumboost.rumboost import rum_train
 
 import lightgbm as lgb
 import pandas as pd
+from datetime import datetime
 from sklearn.model_selection import KFold
-from rumboost.metrics import cross_entropy
 
-df_train = pd.read_csv('input/data/2015/persons_cleaned_train.csv')
-df_test = pd.read_csv('input/data/2015/persons_cleaned_test.csv')
+from rumboost_definition import get_rumboost_model_spec, lightgbm_data, define_variables
+from descriptive_stats import calculate_metrics
 
-features = [
-    'age',
-    'dl_car',
-    'work_sched_fully_flex',
-    'ptsub_regional',
-    #'ptsub_parcours',
-    'male',
-    'self_employed_with_employees',
-    'self_employed_without_employees',
-    'employed_by_family',
-    'employee_management',
-    'employee_with_supervision',
-    'secondary_education',
-    'hh_size',
-    'hh_income_4000_6000',
-    'hh_income_6000_8000',
-    'hh_income_8000_10000',
-    'hh_income_10000_12000',
-    'hh_income_12000_14000',
-    'hh_income_14000_16000',
-    'hh_income_16000_plus',
-    'car_net_distance',
-    'accsib_car'
-]
+try:
+    import torch
 
-train_set = lgb.Dataset(df_train[features], label=df_train['work_home_days'], free_raw_data=False)
-test_set = lgb.Dataset(df_test[features], label=df_test['work_home_days'], free_raw_data=False)
-
-monotone_constraints = [0] * len(features)
-interaction_constraints = [[i] for i, _ in enumerate(features)]
+    TORCH_INSTALLED = True
+    print("Torch is installed, attempting to run on GPU")
+except ImportError:
+    TORCH_INSTALLED = False
 
 
-#rum_structure = [
-#    {
-#        "utility": [0],
-#        "variables": features,
-#        "boosting_params": {
-#            "monotone_constraints_method": "advanced",
-#            "max_depth": 1,
-#            "n_jobs": -1,
-#            "learning_rate": 0.1,
-#            "monotone_constraints": monotone_constraints,
-#            "interaction_constraints": interaction_constraints,
-#        },
-#        "shared": False,
-#    }
-#]
-
-rum_structure1 = [
-    {
-        "utility": [0],
-        "variables": [f],
-        "boosting_params": {
-            "monotone_constraints_method": "advanced",
-            "max_depth": 1,
-            "n_jobs": -1,
-            "learning_rate": 0.005,
-            "verbose": -1,
-        },
-        "shared": False,
-    } for f in features
-]
-rum_structure2 = [
-    {
-        "utility": [0],
-        "variables": [f],
-        "boosting_params": {
-            "monotone_constraints_method": "advanced",
-            "max_depth": 1,
-            "n_jobs": -1,
-            "learning_rate": 0.01,
-            "verbose": -1,
-        },
-        "shared": False,
-    } for f in features
-]
-rum_structure = rum_structure1 + rum_structure2
-general_params = {
-    "n_jobs": -1,
-    "num_classes": 6,  # important
-    "verbosity": 1,  # specific RUMBoost parameter
-    "verbose_interval": 1,
-    "num_iterations": 50,
-    "early_stopping_round": None,
-    "boost_from_parameter_space": [True] * len(rum_structure1) + [False] * len(rum_structure2),
-    "max_booster_to_update": len(rum_structure)
-}
-
-model_specification = {
-    "general_params": general_params,
-    "rum_structure": rum_structure,
-    "ordinal_logit": {
-        "model": "proportional_odds",
-        "optim_interval": 1,
-    }
-}
-
-torch_tensors = {
-    "device": "cuda"
-}
-#kfold = 5
-
-#kf = KFold(n_splits=kfold, shuffle=True, random_state=42)
-
-#num_trees = 0
-#for i, (train_index, val_index) in enumerate(kf.split(df_train)):
-    #train_set_cv = lgb.Dataset(df_train.loc[train_index, features], label=df_train.loc[train_index, 'work_home_days'], free_raw_data=False)
-    #val_set = lgb.Dataset(df_train.loc[val_index, features], label=df_train.loc[val_index, 'work_home_days'], free_raw_data=False)
-
-    #model = rum_train(train_set_cv, model_specification, valid_sets=[val_set])
-
-    #num_trees += model.best_iteration
-
-    #print(f'Fold {i+1}/{kfold}: best ce = {model.best_score} with {model.best_iteration} trees')
-
-#num_trees = int(num_trees / kfold)
-
-#print(f'Average number of trees: {num_trees}')
-
-#general_params['num_iterations'] = num_trees
-#general_params['early_stopping_round'] = None
-
-final_model = rum_train(train_set, model_specification, torch_tensors=torch_tensors)
-
-y_pred = final_model.predict(test_set)
-
-cel = cross_entropy(y_pred, df_test['work_home_days'].values)
-
-if general_params['boost_from_parameter_space']:
-    ASC = final_model.asc.sum()
-else:
-    df_zeros = pd.DataFrame({f: [0] for f in features})
-
-    ASC = final_model.predict(lgb.Dataset(df_zeros, free_raw_data=False), utilities=True)[0]
-
-print(f'Cross-entropy loss on train set: {final_model.best_score_train}')
-print(f'Cross-entropy loss on test set: {cel}')
-print(f'ASC: {ASC}')
-print(f'Thresholds: {final_model.thresholds}')
-print(f'Thresholds without ASC: {final_model.thresholds-ASC}')
-
-#final_model.save_model('output/data/rumboost_model.json')
-
-from rumboost.utility_plotting import plot_parameters
+def train_rumboost_homeoffice(
+    df_zp, output_directory, intensity_cutoff=None, df_zp_test=None, year: int = None
+):
+    year_name = f"{year}" if year else "2015_2020_2021"
+    output_directory = output_directory / f"models/estimation/{year_name}/"
+    output_directory.mkdir(parents=True, exist_ok=True)
+    train_rumb(df_zp, output_directory, df_zp_test, intensity_cutoff)
 
 
-#plot_parameters(final_model, df_train, {"0": "Ordinal "}, save_file='output/figures/rumboost')
-utility_names = {str(i): "ordinal" for i, f in enumerate(features * 2)}
+def train_rumb(df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=None):
 
-boost_from_p_plot = {str(i): {} for i, f in enumerate(features * 2)}
-for j, struct in enumerate(rum_structure):
-    boost_from_p_plot[str(j)][struct["variables"][0]] = general_params["boost_from_parameter_space"][j]
+    torch_tensors = {"device": "cuda"} if TORCH_INSTALLED else None
 
-plot_parameters(final_model, df_train, utility_names, boost_from_parameter_space=boost_from_p_plot, group_feature={'age': [0, len(rum_structure1)]}, only_tt=False)
-#plot_parameters(final_model, df_train, utility_names, boost_from_parameter_space=False)
+    choice_situation = "intensity" if intensity_cutoff else "possibility"
+    print("Training RUMBoost model for predicting telecommuting " + choice_situation)
+
+    choice = "telecommuting_intensity" if intensity_cutoff else "telecommuting"
+    new_df_train = define_variables(df_zp_train, choice)
+    new_df_test = (
+        define_variables(df_zp_test, choice) if df_zp_test is not None else None
+    )
+
+    model_specification = get_rumboost_model_spec(new_df_train, intensity_cutoff)
+
+    features = new_df_train.columns.tolist()
+
+    k = 5
+    kf = KFold(n_splits=k, shuffle=True, random_state=42)
+    num_trees = 0
+    metrics_df = pd.DataFrame({})
+
+    # kfold cross-validation
+    for i, (train_index, test_index) in enumerate(kf.split(new_df_train)):
+        print(f"Fold {i+1}/{k}")
+        train_data = lightgbm_data(
+            new_df_train.loc[train_index, features],
+            new_df_train.loc[train_index, choice],
+        )
+        val_data = lightgbm_data(
+            new_df_train.loc[test_index, features], new_df_train.loc[test_index, choice]
+        )
+
+        try:
+            model = rum_train(train_data, model_specification, valid_sets=[val_data], torch_tensors=torch_tensors)
+        except:
+            model = rum_train(train_data, model_specification, valid_sets=[val_data])
+
+        print(
+            f"Best cross-entropy: {model.best_score} with {model.best_iteration} trees"
+        )
+
+        # storing number of trees
+        num_trees += model.best_iteration
+
+        # cv metrics
+        y_pred_train = model.predict(train_data)
+        y_pred_val = model.predict(val_data)
+        metrics = calculate_metrics(
+            new_df_train.loc[test_index, choice], y_pred_train, intensity_cutoff
+        )
+        metrics_val = calculate_metrics(
+            new_df_train.loc[test_index, choice], y_pred_val, intensity_cutoff
+        )
+        metrics_df = metrics_df.append(metrics, ignore_index=True)
+        metrics_df = metrics_df.append(metrics_val, ignore_index=True)
+
+    # average number of trees over the k folds
+    avg_trees = int(num_trees / k)
+
+    model_specification["general_params"]["num_iterations"] = avg_trees
+    model_specification["general_params"]["early_stopping_round"] = None
+
+    # final training on the test set
+    train_data = lightgbm_data(new_df_train[features], new_df_train[choice])
+
+    try:
+        model = rum_train(train_data, model_specification, torch_tensors=torch_tensors)
+    except:
+        model = rum_train(train_data, model_specification)
+
+    # training metrics
+    y_pred = model.predict(train_data)
+
+    metrics = calculate_metrics(new_df_train[choice], y_pred, intensity_cutoff)
+    metrics_df = metrics_df.append(metrics, ignore_index=True)
+
+    if df_zp_test is not None:
+        test_data = lightgbm_data(new_df_test[features], new_df_test[choice])
+        predictions = model.predict(test_data)
+        metrics_test = calculate_metrics(
+            new_df_test[choice], predictions, intensity_cutoff
+        )
+        metrics_df = metrics_df.append(metrics_test, ignore_index=True)
+
+    # save model and metrics
+    str_model = "intensity" if intensity_cutoff else "possibility"
+    model.save_model(
+        output_directory / f"rumboost_model_wfh_{str_model}_"
+        + datetime.now().strftime("%Y_%m_%d-%H_%M")
+        + ".json"
+    )
+    file_name = (
+        f"rumboost_metrics_wfh_{str_model}_"
+        + datetime.now().strftime("%Y_%m_%d-%H_%M")
+        + ".csv"
+    )
+    metrics_df.to_csv(output_directory / file_name, index=False)
+
+    # figures
+    # plot_parameters(final_model, df_train, {"0": "Binary"}, save_file='output/figures/rumboost_with_intensity_alldata')
