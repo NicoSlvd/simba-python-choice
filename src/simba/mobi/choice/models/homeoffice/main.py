@@ -1,5 +1,5 @@
 from pathlib import Path
-from argparse import ArgumentParser
+from argparse import ArgumentParser, BooleanOptionalAction
 
 from sklearn.model_selection import train_test_split
 
@@ -11,15 +11,10 @@ from simba.mobi.choice.models.homeoffice.model_estimation import (
 from simba.mobi.choice.models.homeoffice.rumboost_estimation import (
     train_rumboost_telecommuting
 )
-  
-#) pour demain:
-# - ajouter les requirements
-# - shell script pour lancer les commandes
-# - tester avec fake data?
 
 
 def run_home_office_in_microcensus(
-    year, choice_situation, estimator, intensity_cutoff, data_intensity_only, test_size
+    year, estimator, intensity_cutoff, data_intensity_only, test_size
 ) -> None:
     """Generate 2015 data"""
     input_directory = Path(
@@ -56,7 +51,7 @@ def run_home_office_in_microcensus(
         estimate_choice_model_telecommuting(df_zp_train, output_directory, intensity_cutoff, df_zp_test, year)
         # descriptive_statistics(output_directory)
     elif estimator == "rumboost":
-        train_rumboost_telecommuting(df_zp_train, output_directory, df_zp_test, intensity_cutoff)
+        train_rumboost_telecommuting(df_zp_train, output_directory, intensity_cutoff, df_zp_test, year)
 
 
 if __name__ == "__main__":
@@ -67,16 +62,8 @@ if __name__ == "__main__":
         "--year",
         type=int,
         choices=[2010, 2015, 2020, 2021],
-        default=None,
+        default=2021,
         help="Year of the data. If not provided, all years will be used",
-    )
-    argparser.add_argument(
-        "-c",
-        "--choice_situation",
-        type=str,
-        default="intensity",
-        choices=["intensity", "possibility"],
-        help="Choice situation. The model will either estimate the intensity or the possibility of telecommuting",
     )
     argparser.add_argument(
         "-m",
@@ -96,9 +83,7 @@ if __name__ == "__main__":
     argparser.add_argument(
         "-d",
         "--data_intensity_only",
-        type=bool,
-        default=False,
-        help="If True, only the data where telecommuting is available will be used",
+        action=BooleanOptionalAction,
     )
     argparser.add_argument(
         "-t",
@@ -111,10 +96,9 @@ if __name__ == "__main__":
     args = argparser.parse_args()
 
     run_home_office_in_microcensus(
-        args.year,
-        args.choice_situation,
+        int(args.year),
         args.model,
-        args.intensity_cutoff,
+        int(args.intensity_cutoff),
         args.data_intensity_only,
-        args.test_size,
+        float(args.test_size),
     )

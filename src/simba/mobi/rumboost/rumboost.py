@@ -23,13 +23,13 @@ from lightgbm.basic import (
 )
 from lightgbm.compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
-from rumboost.metrics import cross_entropy, binary_cross_entropy, mse, safe_softplus
-from rumboost.nested_cross_nested import (
+from simba.mobi.rumboost.metrics import cross_entropy, binary_cross_entropy, mse, safe_softplus
+from simba.mobi.rumboost.nested_cross_nested import (
     nest_probs,
     cross_nested_probs,
     optimise_mu_or_alpha,
 )
-from rumboost.ordinal import (
+from simba.mobi.rumboost.ordinal import (
     diff_to_threshold,
     threshold_to_diff,
     threshold_preds,
@@ -38,11 +38,11 @@ from rumboost.ordinal import (
     optimise_thresholds_proportional_odds,
 )
 
-from rumboost.utils import optimise_asc
+from simba.mobi.rumboost.utils import optimise_asc
 
 try:
     import torch
-    from rumboost.torch_functions import (
+    from simba.mobi.rumboost.torch_functions import (
         _inner_predict_torch,
         _inner_predict_torch_compiled,
         _f_obj_torch,

@@ -5,8 +5,12 @@ import pandas as pd
 from datetime import datetime
 from sklearn.model_selection import KFold
 
-from rumboost_definition import get_rumboost_model_spec, lightgbm_data, define_variables
-from descriptive_stats import calculate_metrics
+from simba.mobi.choice.models.homeoffice.rumboost_definition import (
+    get_rumboost_model_spec,
+    lightgbm_data,
+    define_variables,
+)
+from simba.mobi.choice.models.homeoffice.descriptive_stats import calculate_metrics
 
 try:
     import torch
@@ -17,7 +21,7 @@ except ImportError:
     TORCH_INSTALLED = False
 
 
-def train_rumboost_homeoffice(
+def train_rumboost_telecommuting(
     df_zp, output_directory, intensity_cutoff=None, df_zp_test=None, year: int = None
 ):
     year_name = f"{year}" if year else "2015_2020_2021"
@@ -60,7 +64,12 @@ def train_rumb(df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=
         )
 
         try:
-            model = rum_train(train_data, model_specification, valid_sets=[val_data], torch_tensors=torch_tensors)
+            model = rum_train(
+                train_data,
+                model_specification,
+                valid_sets=[val_data],
+                torch_tensors=torch_tensors,
+            )
         except:
             model = rum_train(train_data, model_specification, valid_sets=[val_data])
 
@@ -80,8 +89,8 @@ def train_rumb(df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=
         metrics_val = calculate_metrics(
             new_df_train.loc[test_index, choice], y_pred_val, intensity_cutoff
         )
-        metrics_df = metrics_df.append(metrics, ignore_index=True)
-        metrics_df = metrics_df.append(metrics_val, ignore_index=True)
+        metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics, index=[f"train_{i}"])])
+        metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics_val, index=[f"val_{i}"])])
 
     # average number of trees over the k folds
     avg_trees = int(num_trees / k)
@@ -101,7 +110,7 @@ def train_rumb(df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=
     y_pred = model.predict(train_data)
 
     metrics = calculate_metrics(new_df_train[choice], y_pred, intensity_cutoff)
-    metrics_df = metrics_df.append(metrics, ignore_index=True)
+    metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics, index=["train_final"])])
 
     if df_zp_test is not None:
         test_data = lightgbm_data(new_df_test[features], new_df_test[choice])
@@ -109,7 +118,7 @@ def train_rumb(df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=
         metrics_test = calculate_metrics(
             new_df_test[choice], predictions, intensity_cutoff
         )
-        metrics_df = metrics_df.append(metrics_test, ignore_index=True)
+        metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics_test, index=["test"])])
 
     # save model and metrics
     str_model = "intensity" if intensity_cutoff else "possibility"

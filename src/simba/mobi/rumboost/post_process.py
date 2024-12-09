@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import lightgbm as lgb
-from rumboost.rumboost import RUMBoost, rum_train
+from simba.mobi.rumboost.rumboost import RUMBoost, rum_train
 
 
 def split_fe_model(model: RUMBoost):

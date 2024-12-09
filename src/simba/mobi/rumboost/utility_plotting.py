@@ -9,7 +9,7 @@ try:
 except ImportError:
     matplotlib_seaborn_installed = False
 
-from rumboost.utility_smoothing import (
+from simba.mobi.rumboost.utility_smoothing import (
     monotone_spline,
     mean_monotone_spline,
     data_leaf_value,

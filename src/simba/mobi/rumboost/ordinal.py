@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.special import expit
-from rumboost.metrics import cross_entropy, weighted_binary_cross_entropy
+from simba.mobi.rumboost.metrics import cross_entropy, weighted_binary_cross_entropy
 
 def threshold_preds(raw_preds, thresholds):
     """

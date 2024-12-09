@@ -1,5 +1,5 @@
 import numpy as np
-from rumboost.metrics import cross_entropy
+from simba.mobi.rumboost.metrics import cross_entropy
 from scipy.special import softmax
 
 def optimise_asc(asc, raw_preds, labels):

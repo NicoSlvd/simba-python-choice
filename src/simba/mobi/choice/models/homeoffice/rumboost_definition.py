@@ -101,7 +101,7 @@ def define_variables(df_zp, choice_var_name) -> pd.DataFrame:
     return new_df
 
 
-def get_rumboost_rum_structure(new_df) -> dict:
+def get_rumboost_rum_structure(new_df):
     
     variables = new_df.columns.tolist()
 
@@ -139,7 +139,6 @@ def get_rumboost_model_spec(new_df, intensity_cutoff = None) -> dict:
         "verbose_interval": 1,
         "num_iterations": 2000,
         "early_stopping_round": 100,
-        "boost_from_parameter_space": False,
     }
 
     model_specification = {

@@ -1,10 +1,10 @@
 import numpy as np
 from scipy.special import softmax
-from rumboost.metrics import cross_entropy
+from simba.mobi.rumboost.metrics import cross_entropy
 
 try:
     import torch
-    from rumboost.torch_functions import (
+    from simba.mobi.rumboost.torch_functions import (
         cross_entropy_torch,
         cross_entropy_torch_compiled,
         _nest_probs_torch,
