@@ -55,8 +55,9 @@ def get_data_per_year(year: int, intensity_cutoff: int = None) -> pd.DataFrame:
     # path_to_npvm_zones = r"path_to_npvm_zones"
     # path_to_skim_file = r"path_to_skim_file"
 
-    path_to_data = "/media/nicolas-salvade/Windows/Users/DAF1/OneDrive - University College London/Documents/PhD - UCL/choice_set_location_travelmode/Data"
-    path_to_npvm_zones = Path(path_to_data + "/Zone/Verkehrszonen_Schweiz_MOBI_2017/Verkehrszonen_Schweiz_MOBI_2017_shp/Verkehrszonen_Schweiz_MOBI_2017.shp")
+    # path_to_data = "/media/nicolas-salvade/Windows/Users/DAF1/OneDrive - University College London/Documents/PhD - UCL/choice_set_location_travelmode/Data"
+    path_to_data = "C:/Users/ucesnjs/OneDrive - University College London/Documents/PhD - UCL/choice_set_location_travelmode/Data"
+    path_to_npvm_zones = Path(path_to_data + "/Zone/Verkehrszonen_Schweiz_NPVM_2017/Verkehrszonen_Schweiz_NPVM_2017_shp/Verkehrszonen_Schweiz_NPVM_2017.shp")
     path_to_mobi_zones = Path(path_to_data + "/skims_zone_to_zone_2017/zonal_attributes.csv")
     path_to_skim_file = Path(path_to_data + "/skims_zone_to_zone_2017/skims_mobi3.0_2017.omx")
 
@@ -447,8 +448,9 @@ def add_accessibility(
     df_zp.to_crs(epsg=2056, inplace=True)
     # Read the Geopackage file containing the zones. Proj: 2056, CH1903+
     df_zones = geopandas.read_file(path_to_npvm_zones)
+    df_zones = df_zones.rename(columns={"ID_alt": "zone_id"})
     df_zp = geopandas.sjoin(
-        df_zp, df_zones[["zone_id", "geometry"]], how="left", predicate="intersects"
+        df_zp, df_zones[["zone_id", "geometry"]], how="left", predicate="intersects" #TOPUTBACK
     )
     df_zp.fillna({"zone_id": -999}, inplace=True)
     # Rename the column with the zone ID
