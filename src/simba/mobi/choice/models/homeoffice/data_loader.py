@@ -51,9 +51,14 @@ def merge_data_files(df_zp1: pd.DataFrame, df_zp2: pd.DataFrame) -> pd.DataFrame
 
 def get_data_per_year(year: int, intensity_cutoff: int = None) -> pd.DataFrame:
     # Input daten
-    path_to_mobi_zones = r"path_to_mobi_zones"
-    path_to_npvm_zones = r"path_to_npvm_zones"
-    path_to_skim_file = r"path_to_skim_file"
+    # path_to_mobi_zones = r"path_to_mobi_zones"
+    # path_to_npvm_zones = r"path_to_npvm_zones"
+    # path_to_skim_file = r"path_to_skim_file"
+
+    path_to_data = "/media/nicolas-salvade/Windows/Users/DAF1/OneDrive - University College London/Documents/PhD - UCL/choice_set_location_travelmode/Data"
+    path_to_npvm_zones = Path(path_to_data + "/Zone/Verkehrszonen_Schweiz_MOBI_2017/Verkehrszonen_Schweiz_MOBI_2017_shp/Verkehrszonen_Schweiz_MOBI_2017.shp")
+    path_to_mobi_zones = Path(path_to_data + "/skims_zone_to_zone_2017/zonal_attributes.csv")
+    path_to_skim_file = Path(path_to_data + "/skims_zone_to_zone_2017/skims_mobi3.0_2017.omx")
 
     # Generate the data
     df_zp = generate_data_file(
@@ -450,7 +455,8 @@ def add_accessibility(
     df_zp.rename(columns={"zone_id": "zone_id_home"}, inplace=True)
 
     """ Add accessibility for home location """
-    path_to_mobi_zones_csv = path_to_mobi_zones / "mobi-zones.csv"
+    #path_to_mobi_zones_csv = path_to_mobi_zones / "mobi-zones.csv" TOPUTBACK
+    path_to_mobi_zones_csv = path_to_mobi_zones
     with open(path_to_mobi_zones_csv, "r", encoding="latin1") as accessibility_file:
         df_accessibility = pd.read_csv(
             accessibility_file,
@@ -572,12 +578,14 @@ def add_home_work_distance(
     ]
 
     # Open skim file
-    skims = omx.open_file(path_to_skim_file / "skims.omx", "r")
+    #skims = omx.open_file(path_to_skim_file / "skims.omx", "r") TOPUTBACK
+    skims = omx.open_file(path_to_skim_file, "r")
     # Load car network distance matrix as numpy array
     car_network_distance_matrix = np.array(skims["12"])
 
     """ Get MOBi traffic zones """
-    path_to_mobi_zones_shp = path_to_mobi_zones / "mobi-zones.shp"
+    #path_to_mobi_zones_shp = path_to_mobi_zones / "mobi-zones.shp" TOPUTBACK
+    path_to_mobi_zones_shp = path_to_mobi_zones
     # Important: zone_ids must be in ascending order
     mobi_zones = geopandas.read_file(path_to_mobi_zones_shp).sort_values("zone_id")
     mobi_zones.crs = "EPSG:2056"
