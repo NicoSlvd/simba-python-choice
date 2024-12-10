@@ -1,16 +1,16 @@
-from simba.mobi.rumboost.rumboost import rum_train
+from src.simba.mobi.rumboost.rumboost import rum_train
 
 import lightgbm as lgb
 import pandas as pd
 from datetime import datetime
 from sklearn.model_selection import KFold
 
-from simba.mobi.choice.models.homeoffice.rumboost_definition import (
+from src.simba.mobi.choice.models.homeoffice.rumboost_definition import (
     get_rumboost_model_spec,
     lightgbm_data,
     define_variables,
 )
-from simba.mobi.choice.models.homeoffice.descriptive_stats import calculate_metrics
+from src.simba.mobi.choice.models.homeoffice.descriptive_stats import calculate_metrics
 
 try:
     import torch

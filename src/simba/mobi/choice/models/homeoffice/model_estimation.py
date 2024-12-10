@@ -10,10 +10,10 @@ from biogeme.expressions import bioMin
 from biogeme.expressions import log
 from biogeme.expressions import Elem
 
-from simba.mobi.choice.models.homeoffice.model_definition import define_variables
-from simba.mobi.choice.models.homeoffice.model_definition import get_dict_betas
-from simba.mobi.choice.models.homeoffice.descriptive_stats import calculate_metrics
-from simba.mobi.choice.utils.biogeme import estimate_in_directory
+from src.simba.mobi.choice.models.homeoffice.model_definition import define_variables
+from src.simba.mobi.choice.models.homeoffice.model_definition import get_dict_betas
+from src.simba.mobi.choice.models.homeoffice.descriptive_stats import calculate_metrics
+from src.simba.mobi.choice.utils.biogeme import estimate_in_directory
 
 
 def estimate_choice_model_telecommuting(
@@ -40,7 +40,7 @@ def run_estimation(
 
     define_variables(database)
 
-    dict_betas = get_dict_betas()
+    dict_betas = get_dict_betas(intensity_cutoff)
 
     # The following statement allows you to use the names of the variable as Python variable.
     globals().update(database.variables)
@@ -105,7 +105,8 @@ def run_estimation(
     if intensity_cutoff:
         tau_1 = dict_betas["tau_1"]
         for i in range(1, 100 // intensity_cutoff):
-            globals()[f"tau_{i+1}"] = dict_betas[f"tau_{i}"] + dict_betas[f"diff_{i}{i+1}"] # add the difference between the thresholds
+            # add the difference between the thresholds
+            globals()[f"tau_{i+1}"] = dict_betas[f"tau_{i}"] + dict_betas[f"diff_{i}{i+1}"]
 
     # Associate utility functions with the numbering of alternatives
     V = {1: scale * U, 0: U_no_telecommuting}  # 1: Yes or sometimes, 2: No

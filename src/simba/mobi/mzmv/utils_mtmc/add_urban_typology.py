@@ -14,8 +14,8 @@ def add_urban_typology(
     Can be used e.g. with df_zp (with variable "W_BFS" or "A_BFS") or df_hh (with variable "W_BFS" for 2015)."""
     if (year != 2015) & (year != 2020) & (year != 2021):
         raise ValueError("Spatial typology is only available for 2015, 2020 and 2021!")
-    path_to_typology = Path(r"path_to_typology")
-    path_to_typology = path_to_typology / str(year) / "name_of_typology_file.xlsx"
+    path_to_typology = Path(r"\\wsbbrz0283\mobi\10_Daten\Raumgliederungen")
+    path_to_typology = path_to_typology / str(year) / "Raumgliederungen.xlsx"
     urban_rural_typology = pd.read_excel(
         path_to_typology,
         sheet_name="Daten",

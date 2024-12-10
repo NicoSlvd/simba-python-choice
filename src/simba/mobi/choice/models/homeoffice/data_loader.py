@@ -10,13 +10,13 @@ from model_definition import (
     define_telecommuting_intensity_variable,
 )
 
-from simba.mobi.choice.models.homeoffice.constants import hh_columns
-from simba.mobi.choice.models.homeoffice.constants import zp_columns
-from simba.mobi.mzmv.config import path_to_mtmc_data
-from simba.mobi.mzmv.utils_mtmc.add_urban_typology import add_urban_typology
-from simba.mobi.mzmv.utils_mtmc.get_mtmc_files import get_hh
-from simba.mobi.mzmv.utils_mtmc.get_mtmc_files import get_hhp
-from simba.mobi.mzmv.utils_mtmc.get_mtmc_files import get_zp
+from src.simba.mobi.choice.models.homeoffice.constants import hh_columns
+from src.simba.mobi.choice.models.homeoffice.constants import zp_columns
+from src.simba.mobi.mzmv.config import path_to_mtmc_data
+from src.simba.mobi.mzmv.utils_mtmc.add_urban_typology import add_urban_typology
+from src.simba.mobi.mzmv.utils_mtmc.get_mtmc_files import get_hh
+from src.simba.mobi.mzmv.utils_mtmc.get_mtmc_files import get_hhp
+from src.simba.mobi.mzmv.utils_mtmc.get_mtmc_files import get_zp
 
 
 def get_data(input_directory: Path, intensity_cutoff: int = None) -> pd.DataFrame:
@@ -51,9 +51,11 @@ def merge_data_files(df_zp1: pd.DataFrame, df_zp2: pd.DataFrame) -> pd.DataFrame
 
 def get_data_per_year(year: int, intensity_cutoff: int = None) -> pd.DataFrame:
     # Input daten
-    path_to_mobi_zones = r"path_to_mobi_zones"
-    path_to_npvm_zones = r"path_to_npvm_zones"
-    path_to_skim_file = r"path_to_skim_file"
+    path_to_mobi_server = Path(r"\\wsbbrz0283\mobi")
+    path_to_mobi_zones = (path_to_mobi_server / r"50_Ergebnisse\MOBi_3.1\plans\3.1.4.2020")
+    path_to_npvm_zones = (path_to_mobi_server.joinpath("10_Daten").joinpath("NPVM_Zonen").joinpath(
+        "Verkehrszonen_Schweiz_NPVM_2017").joinpath("Verkehrszonen_Schweiz_NPVM_2017_zone_id.gpkg"))
+    path_to_skim_file = (path_to_mobi_server / r"50_Ergebnisse/MOBi_3.2/plans/3.2_2017_10pct/")
 
     # Generate the data
     df_zp = generate_data_file(

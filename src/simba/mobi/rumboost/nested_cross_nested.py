@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.special import softmax
-from simba.mobi.rumboost.metrics import cross_entropy
+from src.simba.mobi.rumboost.metrics import cross_entropy
 
 try:
     import torch

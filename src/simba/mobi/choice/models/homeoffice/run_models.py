@@ -1,6 +1,6 @@
 import subprocess
 
-MAIN_FILE = "src/simba/mobi/choice/models/homeoffice/main.py"
+MAIN_FILE = "main.py"
 
 models = ["dcm", "rumboost"]
 intensity_cutoffs = [20, 10, 0]
