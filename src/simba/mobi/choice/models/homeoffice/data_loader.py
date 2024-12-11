@@ -92,13 +92,13 @@ def generate_data_file(
     df_hh = get_hh(year, path_to_mtmc_data, selected_columns_hh)
     df_zp = pd.merge(df_zp, df_hh, on="HHNR", how="left")
 
-    # df_zp = add_accessibility(df_zp, path_to_mobi_zones, path_to_npvm_zones)
+    df_zp = add_accessibility(df_zp, path_to_mobi_zones, path_to_npvm_zones)
 
     """Public transport connection quality was tested, was however not significant.
     The variable is not added in the dataset anymore."""
     # df_zp = add_public_transport_connection_quality(df_zp, year)
 
-    # df_zp = add_home_work_crow_fly_distance(df_zp)
+    df_zp = add_home_work_crow_fly_distance(df_zp)
 
     df_zp = add_spatial_typology(df_zp, year)
 
@@ -326,7 +326,7 @@ def generate_data_file(
     df_zp = add_is_studying(df_zp)
 
     """ Add home-work distance from SIMBA MOBi """
-    # df_zp = add_home_work_distance(df_zp, path_to_mobi_zones, path_to_skim_file)
+    df_zp = add_home_work_distance(df_zp, path_to_mobi_zones, path_to_skim_file)
 
     """ Test that no column contains NA values """
     for column in df_zp.columns:
@@ -444,15 +444,14 @@ def add_accessibility(
     df_zones = geopandas.read_file(path_to_npvm_zones)
     df_zones = df_zones.rename(columns={"ID_alt": "zone_id"})
     df_zp = geopandas.sjoin(
-        df_zp, df_zones[["zone_id", "geometry"]], how="left", predicate="intersects" #TOPUTBACK
+        df_zp, df_zones[["zone_id", "geometry"]], how="left", predicate="intersects" 
     )
     df_zp.fillna({"zone_id": -999}, inplace=True)
     # Rename the column with the zone ID
     df_zp.rename(columns={"zone_id": "zone_id_home"}, inplace=True)
 
     """ Add accessibility for home location """
-    #path_to_mobi_zones_csv = path_to_mobi_zones / "mobi-zones.csv" TOPUTBACK
-    path_to_mobi_zones_csv = path_to_mobi_zones
+    path_to_mobi_zones_csv = path_to_mobi_zones / "mobi-zones.csv" 
     with open(path_to_mobi_zones_csv, "r", encoding="latin1") as accessibility_file:
         df_accessibility = pd.read_csv(
             accessibility_file,
@@ -574,14 +573,12 @@ def add_home_work_distance(
     ]
 
     # Open skim file
-    #skims = omx.open_file(path_to_skim_file / "skims.omx", "r") TOPUTBACK
-    skims = omx.open_file(path_to_skim_file, "r")
+    skims = omx.open_file(path_to_skim_file / "skims.omx", "r") 
     # Load car network distance matrix as numpy array
     car_network_distance_matrix = np.array(skims["12"])
 
     """ Get MOBi traffic zones """
-    #path_to_mobi_zones_shp = path_to_mobi_zones / "mobi-zones.shp" TOPUTBACK
-    path_to_mobi_zones_shp = path_to_mobi_zones
+    path_to_mobi_zones_shp = path_to_mobi_zones / "mobi-zones.shp" 
     # Important: zone_ids must be in ascending order
     mobi_zones = geopandas.read_file(path_to_mobi_zones_shp).sort_values("zone_id")
     mobi_zones.crs = "EPSG:2056"
