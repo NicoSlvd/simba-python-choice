@@ -32,7 +32,8 @@ def get_zp(
     elif year == 2015:
         delimiter = ","
     else:
-        delimiter = ";"
+        # delimiter = ";"
+        delimiter = ","
     with open(
         path_to_mtmc_data.joinpath(str(year), file_name),
         "r",
@@ -196,9 +197,9 @@ def get_hh(
                     delimiter=delimiter,
                     dtype={"ZW2_HNR": str, "ZW3_HNR": str},
                 )
-                df_hh.columns.values[
-                    0
-                ] = "HHNR"  # Wrong coding of the first column in the raw data
+                # df_hh.columns.values[
+                #     0
+                # ] = "HHNR"  # Wrong coding of the first column in the raw data
                 df_hh = df_hh[selected_columns]
             else:
                 df_hh = pd.read_csv(

@@ -96,14 +96,14 @@ def define_variables(df_zp, choice_var_name) -> pd.DataFrame:
     new_df.loc[:, other_columns] = df_zp.loc[:, other_columns]
 
     #remove columns with only zeros
-    new_df = new_df.loc[:, (new_df != 0).any(axis=0)]
+    #new_df = new_df.loc[:, (new_df != 0).any(axis=0)]
 
     return new_df
 
 
 def get_rumboost_rum_structure(new_df):
     
-    variables = new_df.columns.tolist()
+    variables = [c for c in new_df.columns if c not in ["telecommuting_intensity", "telecommuting", "HHNR"]]
 
     monotone_constraints = [0] * len(variables)
     interaction_constraints = [[i] for i, _ in enumerate(variables)]
@@ -136,7 +136,6 @@ def get_rumboost_model_spec(new_df, intensity_cutoff = None) -> dict:
         "n_jobs": -1,
         "num_classes": 100 // intensity_cutoff + 1 if intensity_cutoff else 2,  # important
         "verbosity": 0,  # specific RUMBoost parameter
-        "verbose_interval": 1,
         "num_iterations": 2000,
         "early_stopping_round": 100,
     }

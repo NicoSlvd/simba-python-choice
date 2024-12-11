@@ -51,15 +51,9 @@ def merge_data_files(df_zp1: pd.DataFrame, df_zp2: pd.DataFrame) -> pd.DataFrame
 
 def get_data_per_year(year: int, intensity_cutoff: int = None) -> pd.DataFrame:
     # Input daten
-    # path_to_mobi_zones = r"path_to_mobi_zones"
-    # path_to_npvm_zones = r"path_to_npvm_zones"
-    # path_to_skim_file = r"path_to_skim_file"
-
-    # path_to_data = "/media/nicolas-salvade/Windows/Users/DAF1/OneDrive - University College London/Documents/PhD - UCL/choice_set_location_travelmode/Data"
-    path_to_data = "C:/Users/ucesnjs/OneDrive - University College London/Documents/PhD - UCL/choice_set_location_travelmode/Data"
-    path_to_npvm_zones = Path(path_to_data + "/Zone/Verkehrszonen_Schweiz_NPVM_2017/Verkehrszonen_Schweiz_NPVM_2017_shp/Verkehrszonen_Schweiz_NPVM_2017.shp")
-    path_to_mobi_zones = Path(path_to_data + "/skims_zone_to_zone_2017/zonal_attributes.csv")
-    path_to_skim_file = Path(path_to_data + "/skims_zone_to_zone_2017/skims_mobi3.0_2017.omx")
+    path_to_mobi_zones = r"path_to_mobi_zones"
+    path_to_npvm_zones = r"path_to_npvm_zones"
+    path_to_skim_file = r"path_to_skim_file"
 
     # Generate the data
     df_zp = generate_data_file(
@@ -98,13 +92,13 @@ def generate_data_file(
     df_hh = get_hh(year, path_to_mtmc_data, selected_columns_hh)
     df_zp = pd.merge(df_zp, df_hh, on="HHNR", how="left")
 
-    df_zp = add_accessibility(df_zp, path_to_mobi_zones, path_to_npvm_zones)
+    # df_zp = add_accessibility(df_zp, path_to_mobi_zones, path_to_npvm_zones)
 
     """Public transport connection quality was tested, was however not significant.
     The variable is not added in the dataset anymore."""
     # df_zp = add_public_transport_connection_quality(df_zp, year)
 
-    df_zp = add_home_work_crow_fly_distance(df_zp)
+    # df_zp = add_home_work_crow_fly_distance(df_zp)
 
     df_zp = add_spatial_typology(df_zp, year)
 
@@ -332,7 +326,7 @@ def generate_data_file(
     df_zp = add_is_studying(df_zp)
 
     """ Add home-work distance from SIMBA MOBi """
-    df_zp = add_home_work_distance(df_zp, path_to_mobi_zones, path_to_skim_file)
+    # df_zp = add_home_work_distance(df_zp, path_to_mobi_zones, path_to_skim_file)
 
     """ Test that no column contains NA values """
     for column in df_zp.columns:
