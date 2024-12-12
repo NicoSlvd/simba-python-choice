@@ -244,6 +244,7 @@ def get_dict_betas(intensity_cutoff: int = None) -> dict:
             "tau_1", -2, None, 0, 0
         )  # threshold 1 <= 0 according to biogeme ordinal logit model
         for i in range(1, 100 // intensity_cutoff):
+            dict_betas[f"tau_{i}"] = Beta(f"tau_{i}", -2, None, 0, 0)
             dict_betas[f"diff_{i}{i+1}"] = Beta(
                 f"diff_{i}{i+1}", 1, 0, None, 0
             )  # difference between subsequent thresholds
