@@ -16,7 +16,6 @@ try:
     import torch
 
     TORCH_INSTALLED = True
-    print("Torch is installed, attempting to run on GPU")
 except ImportError:
     TORCH_INSTALLED = False
 
@@ -32,6 +31,8 @@ def train_rumboost_telecommuting(
 
 def train_rumb(df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=None):
 
+    if TORCH_INSTALLED:
+        print("Torch is installed. Attempting to use GPU")
     torch_tensors = {"device": "cuda"} if TORCH_INSTALLED else None
 
     choice_situation = "intensity" if intensity_cutoff else "possibility"
@@ -55,12 +56,13 @@ def train_rumb(df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=
     # kfold cross-validation
     for i, (train_index, test_index) in enumerate(kf.split(new_df_train)):
         print(f"Fold {i+1}/{k}")
+        new_df_train_t = new_df_train.iloc[train_index]
+        new_df_train_v = new_df_train.iloc[test_index]
         train_data = lightgbm_data(
-            new_df_train.loc[train_index, features],
-            new_df_train.loc[train_index, choice],
+            new_df_train_t[features], new_df_train_t[choice]
         )
         val_data = lightgbm_data(
-            new_df_train.loc[test_index, features], new_df_train.loc[test_index, choice]
+            new_df_train_v[features], new_df_train_v[choice]
         )
 
         try:
@@ -70,8 +72,13 @@ def train_rumb(df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=
                 valid_sets=[val_data],
                 torch_tensors=torch_tensors,
             )
+            torch_run = True
         except:
             model = rum_train(train_data, model_specification, valid_sets=[val_data])
+            torch_run = False
+        
+        if not TORCH_INSTALLED:
+            torch_run = False
 
         print(
             f"Best cross-entropy: {model.best_score} with {model.best_iteration} trees"
@@ -82,12 +89,20 @@ def train_rumb(df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=
 
         # cv metrics
         y_pred_train = model.predict(train_data)
+        if torch_run:
+            y_pred_train = y_pred_train.cpu().numpy()
         y_pred_val = model.predict(val_data)
+        if torch_run:
+            y_pred_val = y_pred_val.cpu().numpy()
+        if intensity_cutoff:
+            tau_1 = model.thresholds[0]
+        else:
+            tau_1 = None
         metrics = calculate_metrics(
-            new_df_train.loc[test_index, choice], y_pred_train, intensity_cutoff
+            new_df_train_t[choice], y_pred_train, intensity_cutoff, tau_1
         )
         metrics_val = calculate_metrics(
-            new_df_train.loc[test_index, choice], y_pred_val, intensity_cutoff
+            new_df_train_v[choice], y_pred_val, intensity_cutoff, tau_1
         )
         metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics, index=[f"train_{i}"])])
         metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics_val, index=[f"val_{i}"])])
@@ -103,36 +118,55 @@ def train_rumb(df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=
 
     try:
         model = rum_train(train_data, model_specification, torch_tensors=torch_tensors)
+        torch_run = True
     except:
         model = rum_train(train_data, model_specification)
+        torch_run = False
 
+    if not TORCH_INSTALLED:
+        torch_run = False
+
+    str_model = f"intensity{intensity_cutoff}" if intensity_cutoff else "possibility"
+    model_name = (
+        f"rumboost_model_wfh_{str_model}_"
+        + datetime.now().strftime("%Y_%m_%d-%H_%M")
+        + ".json"
+    )
+    model.save_model(
+        output_directory / model_name,
+    )
     # training metrics
     y_pred = model.predict(train_data)
 
-    metrics = calculate_metrics(new_df_train[choice], y_pred, intensity_cutoff)
+    if torch_run:
+        y_pred = y_pred.cpu().numpy()
+
+    if intensity_cutoff:
+        tau_1 = model.thresholds[0]
+    else:
+        tau_1 = None
+
+    metrics = calculate_metrics(new_df_train[choice], y_pred, intensity_cutoff, tau_1)
     metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics, index=["train_final"])])
 
     if df_zp_test is not None:
         test_data = lightgbm_data(new_df_test[features], new_df_test[choice])
         predictions = model.predict(test_data)
+        if torch_run:
+            predictions = predictions.cpu().numpy()
         metrics_test = calculate_metrics(
-            new_df_test[choice], predictions, intensity_cutoff
+            new_df_test[choice], predictions, intensity_cutoff, tau_1
         )
         metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics_test, index=["test"])])
 
     # save model and metrics
-    str_model = "intensity" if intensity_cutoff else "possibility"
-    model.save_model(
-        output_directory / f"rumboost_model_wfh_{str_model}_"
-        + datetime.now().strftime("%Y_%m_%d-%H_%M")
-        + ".json"
-    )
+
     file_name = (
         f"rumboost_metrics_wfh_{str_model}_"
         + datetime.now().strftime("%Y_%m_%d-%H_%M")
         + ".csv"
     )
-    metrics_df.to_csv(output_directory / file_name, index=False)
+    metrics_df.to_csv(output_directory / file_name)
 
     # figures
     # plot_parameters(final_model, df_train, {"0": "Binary"}, save_file='output/figures/rumboost_with_intensity_alldata')

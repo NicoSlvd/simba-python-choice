@@ -21,6 +21,7 @@ def define_telecommuting_intensity_variable(row, intensity_cutoff):
         telecommuting_intensity = (
             int(row["percentage_telecommuting"] / intensity_cutoff) + 1
         )
+        telecommuting_intensity = min(telecommuting_intensity, 100 // intensity_cutoff)
     else:
         telecommuting_intensity = 0
     return telecommuting_intensity
@@ -248,6 +249,9 @@ def get_dict_betas(intensity_cutoff: int = None) -> dict:
             dict_betas[f"diff_{i}{i+1}"] = Beta(
                 f"diff_{i}{i+1}", 1, 0, None, 0
             )  # difference between subsequent thresholds
+            dict_betas[f"tau_{i+1}"] = dict_betas[f"diff_{i}{i+1}"] + dict_betas[
+                f"tau_{i}"
+            ]
 
         dict_betas["alternative_specific_constant"] = Beta(
             "alternative_specific_constant", 0, None, None, 1

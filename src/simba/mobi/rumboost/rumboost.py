@@ -2138,7 +2138,7 @@ class RUMBoost:
                     "torch_compile": self.torch_compile,
                     "rum_structure": self.rum_structure,
                     "boost_from_parameter_space": self.boost_from_parameter_space,
-                    "asc": self.asc,
+                    "asc": self.asc.tolist() if self.asc is not None else None,
                 },
             }
         else:
@@ -2175,7 +2175,7 @@ class RUMBoost:
                     "torch_compile": self.torch_compile,
                     "rum_structure": self.rum_structure,
                     "boost_from_parameter_space": self.boost_from_parameter_space,
-                    "asc": self.asc,
+                    "asc": self.asc.tolist() if self.asc is not None else None,
                 },
             }
 
@@ -2939,7 +2939,7 @@ def rum_train(
             "train_sets"
         ]  # assign the J previously preprocessed datasets
         rumb.labels = train_set["labels"]
-        if rumb.mu is None:
+        if rumb.mu is None and rumb.ord_model is None and rumb.num_classes > 2:
             if not train_set.get("labels_j", None):
                 rumb.labels_j = (
                     rumb.labels[:, None] == np.array(range(rumb.num_classes))[None, :]
@@ -2990,7 +2990,7 @@ def rum_train(
             predictor=predictor,
             free_raw_data=free_raw_data,
         )  # prepare J datasets with relevant features
-        if rumb.mu is not None:
+        if rumb.mu is not None or rumb.ord_model is not None or rumb.num_classes < 3:
             rumb.labels_j = None
 
     # create J boosters with corresponding params and datasets

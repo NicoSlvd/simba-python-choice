@@ -81,10 +81,16 @@ def visualize_work_percentage(output_directory: Path) -> None:
     file_name = "effect_work_percentage" + ".png"
     plt.savefig(output_directory / file_name)
 
-def mae(y_true, y_pred):
+def mae(y_true, y_pred, tau_1):
+    if tau_1 is not None:
+        raw_value = tau_1 - np.log(y_pred[:,0] / (1 - y_pred[:,0]))
+        y_pred = raw_value
     return np.mean(np.abs(y_true - y_pred))
 
-def mse(y_true, y_pred):
+def mse(y_true, y_pred, tau_1):
+    if tau_1 is not None:
+        raw_value = tau_1 - np.log(y_pred[:,0] / (1 - y_pred[:,0]))
+        y_pred = raw_value
     return np.mean((y_true - y_pred)**2)
 
 def emae(y_true, y_pred, intensity_cutoff):
@@ -97,20 +103,20 @@ def emse(y_true, y_pred, intensity_cutoff):
     
 def cel(y_true, y_pred):
     index = range(y_pred.shape[0])
-    return - np.mean(np.log(y_pred(index, y_true)))
+    return - np.mean(np.log(y_pred[index, y_true]))
 
 def bin_cel(y_true, y_pred):
-    if y_pred.shape[1] == 2:
-        return - np.mean(np.log(y_pred[range(y_pred.shape[0]), y_true]))
-    return - np.mean(np.log(y_pred))
+    if (y_pred > 0).all():
+        return - np.mean(np.where(y_true==1, np.log(y_pred), np.log(1 - y_pred)))
+    return - np.mean(y_pred)
     
-def calculate_metrics(y_true, y_pred, intensity_cutoff = None):
+def calculate_metrics(y_true, y_pred, intensity_cutoff = None, tau_1 = None):
     metrics = {}
 
     if intensity_cutoff:
         cel_value = cel(y_true, y_pred)
-        mae_value = mae(y_true, y_pred)
-        mse_value = mse(y_true, y_pred)
+        mae_value = mae(y_true, y_pred, tau_1)
+        mse_value = mse(y_true, y_pred, tau_1)
         emae_value = emae(y_true, y_pred, intensity_cutoff)
         emse_value = emse(y_true, y_pred, intensity_cutoff)
         metrics["cel"] = cel_value
