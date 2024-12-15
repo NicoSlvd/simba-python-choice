@@ -103,8 +103,8 @@ if __name__ == "__main__":
 
             run_home_office_in_microcensus(
                 int(args.year),
-                args.model,
-                int(args.intensity_cutoff),
+                model,
+                cutoff,
                 args.data_intensity_only,
                 float(args.test_size),
             )

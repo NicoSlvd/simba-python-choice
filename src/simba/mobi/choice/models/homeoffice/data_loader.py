@@ -444,7 +444,6 @@ def add_accessibility(
     df_zp.to_crs(epsg=2056, inplace=True)
     # Read the Geopackage file containing the zones. Proj: 2056, CH1903+
     df_zones = geopandas.read_file(path_to_npvm_zones)
-    df_zones = df_zones.rename(columns={"ID_alt": "zone_id"})
     df_zp = geopandas.sjoin(
         df_zp, df_zones[["zone_id", "geometry"]], how="left", predicate="intersects" 
     )

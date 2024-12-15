@@ -39,8 +39,7 @@ def run_estimation(
     database = db.Database("persons", df_zp)
 
     define_variables(database)
-
-    dict_betas = get_dict_betas(intensity_cutoff)
+    
     dict_betas = get_dict_betas(intensity_cutoff)
 
     # The following statement allows you to use the names of the variable as Python variable.
@@ -199,7 +198,7 @@ def run_estimation(
 
         the_proba = models.ordered_logit(
             continuous_value=V,
-            list_of_discrete_values=[0, 1, 2, 3, 4, 5],
+            list_of_discrete_values=[i for i in range(100 // intensity_cutoff + 1)],
             tau_parameter=tau_1,
         )
         # Generate individual expressions for each probability
