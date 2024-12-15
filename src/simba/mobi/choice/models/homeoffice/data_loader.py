@@ -444,15 +444,16 @@ def add_accessibility(
     df_zp.to_crs(epsg=2056, inplace=True)
     # Read the Geopackage file containing the zones. Proj: 2056, CH1903+
     df_zones = geopandas.read_file(path_to_npvm_zones)
+    df_zones = df_zones.rename(columns={"ID_alt": "zone_id"})
     df_zp = geopandas.sjoin(
-        df_zp, df_zones[["zone_id", "geometry"]], how="left", predicate="intersects"
+        df_zp, df_zones[["zone_id", "geometry"]], how="left", predicate="intersects" 
     )
     df_zp.fillna({"zone_id": -999}, inplace=True)
     # Rename the column with the zone ID
     df_zp.rename(columns={"zone_id": "zone_id_home"}, inplace=True)
 
     """ Add accessibility for home location """
-    path_to_mobi_zones_csv = path_to_mobi_zones / "mobi-zones.csv"
+    path_to_mobi_zones_csv = path_to_mobi_zones / "mobi-zones.csv" 
     with open(path_to_mobi_zones_csv, "r", encoding="latin1") as accessibility_file:
         df_accessibility = pd.read_csv(
             accessibility_file,
@@ -574,12 +575,12 @@ def add_home_work_distance(
     ]
 
     # Open skim file
-    skims = omx.open_file(path_to_skim_file / "skims.omx", "r")
+    skims = omx.open_file(path_to_skim_file / "skims.omx", "r") 
     # Load car network distance matrix as numpy array
     car_network_distance_matrix = np.array(skims["12"])
 
     """ Get MOBi traffic zones """
-    path_to_mobi_zones_shp = path_to_mobi_zones / "mobi-zones.shp"
+    path_to_mobi_zones_shp = path_to_mobi_zones / "mobi-zones.shp" 
     # Important: zone_ids must be in ascending order
     mobi_zones = geopandas.read_file(path_to_mobi_zones_shp).sort_values("zone_id")
     mobi_zones.crs = "EPSG:2056"

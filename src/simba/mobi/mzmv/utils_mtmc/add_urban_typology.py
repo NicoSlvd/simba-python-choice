@@ -2,6 +2,7 @@
 from pathlib import Path
 
 import pandas as pd
+import numpy as np #TOPUTBACK
 
 
 def add_urban_typology(
@@ -26,15 +27,16 @@ def add_urban_typology(
         usecols="A,G",  # Selects only the BFS commune number and the column with the typology
     )
 
-    urban_rural_typology = urban_rural_typology.rename(
-        columns={"Städtische / Ländliche Gebiete": "urban_typology"}
-    )
-    df = pd.merge(
-        df,
-        urban_rural_typology,
-        how="left",
-        left_on=field_bfs,
-        right_on="BFS Gde-nummer",
-    )
-    df.drop("BFS Gde-nummer", axis=1, inplace=True)
+    # urban_rural_typology = urban_rural_typology.rename(
+    #     columns={"Städtische / Ländliche Gebiete": "urban_typology"}
+    # )
+    # df = pd.merge(
+    #     df,
+    #     urban_rural_typology,
+    #     how="left",
+    #     left_on=field_bfs,
+    #     right_on="BFS Gde-nummer",
+    # )
+    # df.drop("BFS Gde-nummer", axis=1, inplace=True)
+    df.loc[:, "urban_typology"] = np.random.randint(1, 4, df.shape[0]) #TOPUTBACK
     return df

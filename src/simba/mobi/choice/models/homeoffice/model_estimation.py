@@ -41,6 +41,7 @@ def run_estimation(
     define_variables(database)
 
     dict_betas = get_dict_betas(intensity_cutoff)
+    dict_betas = get_dict_betas(intensity_cutoff)
 
     # The following statement allows you to use the names of the variable as Python variable.
     globals().update(database.variables)
@@ -105,11 +106,13 @@ def run_estimation(
     if intensity_cutoff:
         tau_1 = dict_betas["tau_1"]
         for i in range(1, 100 // intensity_cutoff):
-            # add the difference between the thresholds
-            globals()[f"tau_{i+1}"] = dict_betas[f"tau_{i}"] + dict_betas[f"diff_{i}{i+1}"]
+            globals()[f"tau_{i+1}"] = dict_betas[f"tau_{i+1}"]
 
     # Associate utility functions with the numbering of alternatives
-    V = {1: scale * U, 0: U_no_telecommuting}  # 1: Yes or sometimes, 2: No
+    if intensity_cutoff:
+        V = U
+    else:
+        V = {1: U, 0: U_no_telecommuting}  # 1: Yes or sometimes, 2: No
 
     # All alternatives are supposed to be always available
     av = {1: 1, 0: 1}
@@ -144,7 +147,7 @@ def run_estimation(
     results = estimate_in_directory(the_biogeme, output_directory)
 
     df_parameters = results.getEstimatedParameters()
-    str_model = "intensity" if intensity_cutoff else "possibility"
+    str_model = f"intensity{intensity_cutoff}" if intensity_cutoff else "possibility"
     file_name = (
         f"parameters_dcm_wfh_{str_model}_" + datetime.now().strftime("%Y_%m_%d-%H_%M") + ".csv"
     )
@@ -152,19 +155,15 @@ def run_estimation(
 
     if intensity_cutoff:
         # Generate individual expressions for each probability
-        for i in range(1, 100 // intensity_cutoff + 1):
+        for i in range(0, 100 // intensity_cutoff + 1):
             globals()[f"proba_{i}"] = Elem(the_proba, i)
 
         all_probs = {
-            "prob_0": proba_0,
-            "prob_1": proba_1,
-            "prob_2": proba_2,
-            "prob_3": proba_3,
-            "prob_4": proba_4,
-            "prob_5": proba_5,
+            f"prob_{i}": globals()[f"proba_{i}"] for i in range(100 // intensity_cutoff + 1)
         }
 
         beta_values = results.getBetaValues()
+        tau_1_res = beta_values["tau_1"]
 
         # Create the BIOGEME object, using all_probabilities for simulation
         biogeme_obj = bio.BIOGEME(database, all_probs)
@@ -176,7 +175,7 @@ def run_estimation(
         results_ = biogeme_obj.simulate(beta_values)
 
         # calculate metrics
-        metrics = calculate_metrics(df_zp["telecommuting_intensity"], results_.values, intensity_cutoff)
+        metrics = calculate_metrics(df_zp["telecommuting_intensity"], results_.values, intensity_cutoff, tau_1_res)
 
         metrics_df = pd.DataFrame(metrics, index=['train'])
     
@@ -194,9 +193,11 @@ def run_estimation(
 
         database_test = db.Database('persons_test', df_zp_test)
 
+        define_variables(database_test)
+
         globals().update(database_test.variables)
 
-        the_proba = ordered_logit(
+        the_proba = models.ordered_logit(
             continuous_value=V,
             list_of_discrete_values=[0, 1, 2, 3, 4, 5],
             tau_parameter=tau_1,
@@ -205,10 +206,11 @@ def run_estimation(
         for i in range(1, 100 // intensity_cutoff + 1):
             globals()[f"proba_{i}"] = Elem(the_proba, i)
 
-        all_probs = {"prob_0": proba_0, "prob_1": proba_1, "prob_2": proba_2, "prob_3": proba_3, "prob_4": proba_4, "prob_5": proba_5}
+        all_probs = {f"prob_{i}": globals()[f"proba_{i}"] for i in range(100 // intensity_cutoff + 1)}
 
         beta_values = results.getBetaValues()
 
+        tau_1_res = beta_values["tau_1"]
 
         # Create the BIOGEME object, using all_probabilities for simulation
         biogeme_obj = bio.BIOGEME(database_test, all_probs)
@@ -220,13 +222,15 @@ def run_estimation(
         results_ = biogeme_obj.simulate(beta_values)
 
         # calculate metrics
-        metrics = calculate_metrics(df_zp_test['telecommuting_intensity'], results_.values, intensity_cutoff)
+        metrics = calculate_metrics(df_zp_test['telecommuting_intensity'], results_.values, intensity_cutoff, tau_1_res)
 
         metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics, index=['test'])])
 
     elif df_zp_test is not None:
         
         database_test = db.Database('persons_test', df_zp_test)
+
+        define_variables(database_test)
 
         globals().update(database_test.variables)
 
