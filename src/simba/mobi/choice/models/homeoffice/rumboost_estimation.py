@@ -12,12 +12,13 @@ from src.simba.mobi.choice.models.homeoffice.rumboost_definition import (
 )
 from src.simba.mobi.choice.models.homeoffice.descriptive_stats import calculate_metrics
 
-try:
-    import torch
+# try:
+#     import torch
 
-    TORCH_INSTALLED = True
-except ImportError:
-    TORCH_INSTALLED = False
+#     TORCH_INSTALLED = True
+# except ImportError:
+#     TORCH_INSTALLED = False
+TORCH_INSTALLED = False
 
 
 def train_rumboost_telecommuting(

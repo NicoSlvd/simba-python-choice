@@ -5,22 +5,22 @@ def define_variables(df_zp, choice_var_name) -> pd.DataFrame:
 
     new_df = pd.DataFrame({})
     #  Utility
-    new_df["single_parent_with_children"] = df_zp["hh_type"] == 230
-    new_df["executives_1520"] = (df_zp["work_position"] == 1) * ((df_zp["year"] == 2020) + (df_zp["year"] == 2015))
-    new_df["german_speaking"] = df_zp["language"] == 1
+    new_df["single_parent_with_children"] = (df_zp["hh_type"] == 230).astype(int)
+    new_df["executives_1520"] = ((df_zp["work_position"] == 1) * ((df_zp["year"] == 2020) + (df_zp["year"] == 2015))).astype(int)
+    new_df["german_speaking"] = (df_zp["language"] == 1).astype(int)
 
     # household attributes
-    new_df["single_household"] = df_zp["hh_type"] == 10
-    new_df["number_of_children_NA"] = df_zp["number_of_children_less_than_21"] == -999
+    new_df["single_household"] = (df_zp["hh_type"] == 10).astype(int)
+    new_df["number_of_children_NA"] = (df_zp["number_of_children_less_than_21"] == -999).astype(int)
     new_df["number_of_children_not_NA"] = (df_zp["number_of_children_less_than_21"] != -999) * df_zp["number_of_children_less_than_21"]
-    new_df["hh_income_na"] = df_zp["hh_income"] < 0
-    new_df["hh_income_less_than_2000"] = df_zp["hh_income"] == 1
-    new_df["hh_income_2000_to_4000"] = df_zp["hh_income"] == 2
-    new_df["hh_income_4001_to_6000"] = df_zp["hh_income"] == 3
-    new_df["hh_income_6001_to_8000"] = df_zp["hh_income"] == 4
+    new_df["hh_income_na"] = (df_zp["hh_income"] < 0).astype(int)
+    new_df["hh_income_less_than_2000"] = (df_zp["hh_income"] == 1).astype(int)
+    new_df["hh_income_2000_to_4000"] = (df_zp["hh_income"] == 2).astype(int)
+    new_df["hh_income_4001_to_6000"] = (df_zp["hh_income"] == 3).astype(int)
+    new_df["hh_income_6001_to_8000"] = (df_zp["hh_income"] == 4).astype(int)
 
     # mobility tools
-    new_df["general_abo_halbtax"] = (df_zp["has_ga"] == 1) | (df_zp["has_hta"] == 1)
+    new_df["general_abo_halbtax"] = ((df_zp["has_ga"] == 1) | (df_zp["has_hta"] == 1)).astype(int)
 
     new_df["is_falc_id_6to9_1520"] = (
         (df_zp["business_sector_finance"]
@@ -33,12 +33,12 @@ def define_variables(df_zp, choice_var_name) -> pd.DataFrame:
     # spatial attributes
     new_df["rural_work_1520"] = (
         (df_zp["urban_typology_work"] == 3) * ((df_zp["year"] == 2020) + (df_zp["year"] == 2015))
-    )
+    ).astype(int)
 
     new_df["home_work_distance_car"] = (
         df_zp["car_network_distance"] * (df_zp["car_network_distance"] >= 0.0) / 1000.0
     )
-    new_df["home_work_distance_car_NA"] = df_zp["car_network_distance"] < 0.0
+    new_df["home_work_distance_car_NA"] = (df_zp["car_network_distance"] < 0.0).astype(int)
     
     new_df["fal_id_NA"] = (
         (df_zp["business_sector_agriculture"]
@@ -52,13 +52,13 @@ def define_variables(df_zp, choice_var_name) -> pd.DataFrame:
         + df_zp["business_sector_others"]
         + df_zp["business_sector_non_movers"])
         == 0
-    )
+    ).astype(int)
     new_df["accsib_home_not_NA_1520"] = (
         df_zp["accsib_mul_home"] * (df_zp["accsib_mul_home"] >= 0) / 100000.0
     ) * ((df_zp["year"] == 2020) + (df_zp["year"] == 2015))
 
     ### 2021 ###
-    new_df["executives_21"] = (df_zp["work_position"] == 1) * (df_zp["year"] == 2021)
+    new_df["executives_21"] = ((df_zp["work_position"] == 1) * (df_zp["year"] == 2021)).astype(int)
     new_df["is_falc_id_6to9_21"] = (
         (df_zp["business_sector_finance"]
         + df_zp["business_sector_services_fc"]
@@ -119,6 +119,8 @@ def get_rumboost_rum_structure(new_df):
                 "n_jobs": -1,
                 "learning_rate": 0.1,
                 "verbose": -1,
+                # "min_data_in_leaf": 1,
+                # "min_sum_hessian_in_leaf": 0,
                 "monotone_constraints": monotone_constraints,
                 "interaction_constraints": interaction_constraints,
             },

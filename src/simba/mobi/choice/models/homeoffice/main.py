@@ -4,12 +4,14 @@ from argparse import ArgumentParser, BooleanOptionalAction
 from sklearn.model_selection import train_test_split
 
 from src.simba.mobi.choice.models.homeoffice.data_loader import get_data
-from src.simba.mobi.choice.models.homeoffice.descriptive_stats import descriptive_statistics
+from src.simba.mobi.choice.models.homeoffice.descriptive_stats import (
+    descriptive_statistics,
+)
 from src.simba.mobi.choice.models.homeoffice.model_estimation import (
-    estimate_choice_model_telecommuting
+    estimate_choice_model_telecommuting,
 )
 from src.simba.mobi.choice.models.homeoffice.rumboost_estimation import (
-    train_rumboost_telecommuting
+    train_rumboost_telecommuting,
 )
 
 
@@ -28,6 +30,9 @@ def run_home_office_in_microcensus(
     df_zp = df_zp[df_zp["year"] == year] if year else df_zp
     if data_intensity_only or intensity_cutoff:
         df_zp = df_zp[df_zp["telecommuting"] > 0]
+        df_zp["telecommuting_intensity"] = df_zp["telecommuting_intensity"].apply(
+            lambda x: min(x, 100 // intensity_cutoff)
+        )
     if data_intensity_only:
         # new dependant variable for comparing binary logit and ordinal logit
         # on the data where telecommuting is available
@@ -48,10 +53,14 @@ def run_home_office_in_microcensus(
     )
     output_directory.mkdir(parents=True, exist_ok=True)
     if estimator == "dcm":
-        estimate_choice_model_telecommuting(df_zp_train, output_directory, intensity_cutoff, df_zp_test, year)
+        estimate_choice_model_telecommuting(
+            df_zp_train, output_directory, intensity_cutoff, df_zp_test, year
+        )
         # descriptive_statistics(output_directory)
     elif estimator == "rumboost":
-        train_rumboost_telecommuting(df_zp_train, output_directory, intensity_cutoff, df_zp_test, year)
+        train_rumboost_telecommuting(
+            df_zp_train, output_directory, intensity_cutoff, df_zp_test, year
+        )
 
 
 if __name__ == "__main__":
