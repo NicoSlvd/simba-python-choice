@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from biogeme.expressions import Beta
 
 
@@ -19,9 +20,8 @@ def define_telecommuting_intensity_variable(row, intensity_cutoff):
     for i up to 100/intensity_cutoff. No telecommuting is represented by 0."""
     if row["percentage_telecommuting"] > 0:
         telecommuting_intensity = (
-            int(row["percentage_telecommuting"] / intensity_cutoff) + 1
+            np.ceil(row["percentage_telecommuting"] / intensity_cutoff)
         )
-        telecommuting_intensity = min(telecommuting_intensity, 100 // intensity_cutoff)
     else:
         telecommuting_intensity = 0
     return telecommuting_intensity

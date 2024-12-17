@@ -30,9 +30,6 @@ def run_home_office_in_microcensus(
     df_zp = df_zp[df_zp["year"] == year] if year else df_zp
     if data_intensity_only or intensity_cutoff:
         df_zp = df_zp[df_zp["telecommuting"] > 0]
-        df_zp["telecommuting_intensity"] = df_zp["telecommuting_intensity"].apply(
-            lambda x: min(x, 100 // intensity_cutoff)
-        )
     if data_intensity_only:
         # new dependant variable for comparing binary logit and ordinal logit
         # on the data where telecommuting is available
@@ -109,6 +106,9 @@ if __name__ == "__main__":
             )
 
             args = argparser.parse_args()
+
+            if cutoff and 100 % cutoff != 0:
+                raise ValueError("Intensity cutoff must be a divisor of 100")
 
             run_home_office_in_microcensus(
                 int(args.year),
