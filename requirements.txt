@@ -1,13 +1,11 @@
 # This file may be used to create an environment using:
 # $ conda create --name <env> --file <this file>
 # platform: linux-64
-lightgbm=4.5.0=pypi_0
-numpy=2.1.2=pypi_0
-pandas=2.2.2=pypi_0
-python=3.11.0=he550d4f_1_cpython
-scikit-learn=1.5.1=pypi_0
-scipy=1.14.0=pypi_0
-torch=2.5.1+cu118=pypi_0
-biogeme=3.2.14=pypi_0
-geopandas=1.0.1=pypi_0
-openmatrix=0.3.5.0=pypi_0
+lightgbm==4.5.0
+numpy==2.1.2
+pandas==2.2.2
+scikit-learn==1.6.0
+scipy==1.14.0
+biogeme==3.2.14
+geopandas==1.0.1
+openmatrix==0.3.5.0
