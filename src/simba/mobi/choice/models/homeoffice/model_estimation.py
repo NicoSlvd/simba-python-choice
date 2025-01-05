@@ -54,14 +54,14 @@ def run_estimation(
 
     U = (
         dict_betas["alternative_specific_constant"]
-        + models.piecewiseFormula(age_1520, [18, 35])
-        + models.piecewiseFormula(work_percentage_15, [0, 95, 101])
-        + dict_betas["b_executives_1520"] * executives_1520
+        # + models.piecewiseFormula(age_1520, [18, 35])
+        # + models.piecewiseFormula(work_percentage_15, [0, 95, 101])
+        # + dict_betas["b_executives_1520"] * executives_1520
         + dict_betas["b_german_speaking"] * german_speaking
         + dict_betas["b_no_post_school_education"] * no_post_school_educ
         + dict_betas["b_secondary_education"] * secondary_education
         + dict_betas["b_tertiary_education"] * tertiary_education
-        + dict_betas["b_rural_work_1520"] * rural_work_1520
+        # + dict_betas["b_rural_work_1520"] * rural_work_1520
         + dict_betas["b_hh_income_na"] * hh_income_na
         + dict_betas["b_hh_income_8000_or_less"] * hh_income_less_than_2000
         + dict_betas["b_hh_income_8000_or_less"] * hh_income_2000_to_4000
@@ -73,17 +73,17 @@ def run_estimation(
         + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax
         + models.piecewiseFormula(home_work_distance_car, [0, 0.15])
         + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA
-        + dict_betas["b_is_agriculture_1_15"] * business_sector_agriculture_15
-        + dict_betas["b_is_production_1520"] * business_sector_production_1520
-        + dict_betas["b_is_wohlesale_1520"] * business_sector_wholesale_1520
-        + dict_betas["b_is_falc_id_6to9_1520"] * is_falc_id_6to9_1520
+        # + dict_betas["b_is_agriculture_1_15"] * business_sector_agriculture_15
+        # + dict_betas["b_is_production_1520"] * business_sector_production_1520
+        # + dict_betas["b_is_wohlesale_1520"] * business_sector_wholesale_1520
+        # + dict_betas["b_is_falc_id_6to9_1520"] * is_falc_id_6to9_1520
         + dict_betas["b_falc_id_NA"] * falc_id_NA
-        + dict_betas["beta_accsib_home_not_NA_5_10_1520"]
-        * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 5.0), 5.0))
-        + dict_betas["beta_accsib_home_not_NA_10_24_1520"]
-        * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 10.0), 14.0))
-        + dict_betas["beta_work_percentage_0_95_20"]
-        * bioMax(0.0, bioMin((work_percentage_20 - 0.0), 95.0))
+        # + dict_betas["beta_accsib_home_not_NA_5_10_1520"]
+        # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 5.0), 5.0))
+        # + dict_betas["beta_accsib_home_not_NA_10_24_1520"]
+        # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 10.0), 14.0))
+        # + dict_betas["beta_work_percentage_0_95_20"]
+        # * bioMax(0.0, bioMin((work_percentage_20 - 0.0), 95.0))
         + dict_betas["beta_work_percentage_95_101_20_21"]
         * bioMax(0.0, bioMin((work_percentage_20_21 - 95.0), 6.0))
         + models.piecewiseFormula(age_21, [18, 35])
@@ -126,7 +126,7 @@ def run_estimation(
     # Definition of the model. This is the contribution of each observation to the log likelihood function.
     # Choice variable: "telecommuting"
     if intensity_cutoff:
-        model_name = "wfh_intensity_model_sbb"
+        model_name = f"wfh_intensity{intensity_cutoff}_model_sbb_seed{seed}"
 
         the_proba = models.ordered_logit(
             continuous_value=V,
@@ -139,7 +139,7 @@ def run_estimation(
         logprob = log(the_chosen_proba)
 
     else:
-        model_name = "wfh_possibility_model_sbb"
+        model_name = f"wfh_possibility_model_sbb_seed{seed}"
 
         logprob = models.loglogit(V, av, telecommuting)
 

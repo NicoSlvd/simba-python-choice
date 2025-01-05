@@ -7,6 +7,9 @@ from src.simba.mobi.choice.models.homeoffice.data_loader import get_data
 from src.simba.mobi.choice.models.homeoffice.descriptive_stats import (
     descriptive_statistics,
 )
+from src.simba.mobi.choice.models.homeoffice.model_definition import (
+    define_telecommuting_intensity_variable
+)
 from src.simba.mobi.choice.models.homeoffice.model_estimation import (
     estimate_choice_model_telecommuting,
 )
@@ -38,6 +41,15 @@ def run_home_office_in_microcensus(
         df_zp["telecommuting"] = df_zp["telecommuting_intensity"].apply(
             lambda x: 1 if x > 0 else 0
         )
+    # need to recompute teleworking intensity variable to a different level
+    # if the pre-processed dataset persons.csv is not regenerated from scratch
+    if intensity_cutoff > 0 and len(df_zp["telecommuting_intensity"].unique()) != (100 // intensity_cutoff + 1):
+        df_zp["telecommuting_intensity"] = df_zp.apply(
+            define_telecommuting_intensity_variable,
+            axis=1,
+            intensity_cutoff=intensity_cutoff,
+        )
+    # split the data into training and testing
     df_zp_train, df_zp_test = (
         train_test_split(df_zp, test_size=test_size, random_state=seed)
         if test_size
@@ -51,11 +63,14 @@ def run_home_office_in_microcensus(
         .joinpath("homeoffice")
     )
     output_directory.mkdir(parents=True, exist_ok=True)
+
+    #estimate choice model
     if estimator == "dcm":
         estimate_choice_model_telecommuting(
             df_zp_train, output_directory, intensity_cutoff, df_zp_test, year, seed
         )
         # descriptive_statistics(output_directory)
+    #estimate rumboost
     elif estimator == "rumboost":
         train_rumboost_telecommuting(
             df_zp_train, output_directory, intensity_cutoff, df_zp_test, year, seed
@@ -69,7 +84,7 @@ if __name__ == "__main__":
 
     for model in models:
         for cutoff in intensity_cutoffs:
-            for seed in range(10):
+            for seed in range(10): # 10 runs to mitigate randomness
                 if model == "dcm":
                     path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
                         "output"
