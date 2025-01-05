@@ -9,7 +9,7 @@ try:
 except ImportError:
     matplotlib_seaborn_installed = False
 
-from simba.mobi.rumboost.utility_smoothing import (
+from src.simba.mobi.rumboost.utility_smoothing import (
     monotone_spline,
     mean_monotone_spline,
     data_leaf_value,
@@ -193,6 +193,7 @@ def plot_parameters(
     boost_from_parameter_space=None,
     group_feature=None,
     save_file="",
+    no_output=False,
 ):
     """
     Plot the non linear impact of parameters on the utility function.
@@ -233,6 +234,8 @@ def plot_parameters(
         Keys should be the feature name, and values should be the list of ensembles index in rum_structure.
     save_file : str, optional (default='')
         The name to save the figure with. The figure will be saved only if save_file is not an empty string.
+    no_output : bool, optional (default = False)
+        If True, do not plot the figures, only return the data.
     """
     weights_arranged = weights_to_plot_v2(model, num_iteration=num_iteration)
 
@@ -574,7 +577,7 @@ def plot_parameters(
                         0,
                         1.05 * max(X[f]),
                         10000,
-                        boost_from_parameter_space[u][f],
+                        boost_from_parameter_space[u][f] if boost_from_parameter_space else False,
                     )
                 elif xlabel_max:
                     x, non_lin_func = non_lin_function(
@@ -582,7 +585,7 @@ def plot_parameters(
                         0,
                         1.05 * xlabel_max[u],
                         10000,
-                        boost_from_parameter_space[u][f],
+                        boost_from_parameter_space[u][f] if boost_from_parameter_space else False,
                     )
                 else:
                     x, non_lin_func = non_lin_function(
@@ -590,22 +593,21 @@ def plot_parameters(
                         0,
                         1.05 * weights_arranged[u][f]["Splitting points"][-1],
                         10000,
-                        boost_from_parameter_space[u][f],
+                        boost_from_parameter_space[u][f] if boost_from_parameter_space else False,
                     )
 
-                if asc_normalised and not boost_from_parameter_space[u][f]:
+                if asc_normalised and (not boost_from_parameter_space or not boost_from_parameter_space[u][f]):
                     val_0 = non_lin_func[0]
                     non_lin_func = [n - val_0 for n in non_lin_func]
                 elif boost_from_parameter_space[u][f]:
                     val_0 = (
                         model.asc[int(u)]
-                        * model.utility_length[
-                            model.rum_structure[int(u)]["utility"][0]
-                        ]
                     )
+                    if model.device == "cuda":
+                        val_0 = val_0.cpu().detach().numpy()
                     non_lin_func = [n + val_0 for n in non_lin_func]
 
-                if with_asc and not boost_from_parameter_space[u][f]:
+                if with_asc and (not boost_from_parameter_space or not boost_from_parameter_space[u][f]):
                     non_lin_func = [n + ASCs[int(u)] for n in non_lin_func]
 
                 # plot parameters
@@ -664,7 +666,6 @@ def plot_parameters(
                     plt.savefig(
                         f"{save_file}_{utility_names[u]}_{f}.png", facecolor="white"
                     )
-
                 if no_output:
                     pass
                 else:
@@ -770,6 +771,8 @@ def plot_parameters(
                 )
 
             plt.show()
+    
+    plt.close("all")
 
 
 def plot_market_segm(

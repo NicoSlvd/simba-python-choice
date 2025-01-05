@@ -20,7 +20,7 @@ def define_telecommuting_intensity_variable(row, intensity_cutoff):
     for i up to 100/intensity_cutoff. No telecommuting is represented by 0."""
     if row["percentage_telecommuting"] > 0:
         telecommuting_intensity = (
-            np.ceil(row["percentage_telecommuting"] / intensity_cutoff)
+            np.ceil(np.minimum(100, row["percentage_telecommuting"]) / intensity_cutoff)
         )
     else:
         telecommuting_intensity = 0

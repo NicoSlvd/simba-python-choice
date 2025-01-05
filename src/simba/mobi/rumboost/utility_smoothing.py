@@ -5,9 +5,9 @@ from scipy.interpolate import interp1d, PchipInterpolator
 from scipy.special import softmax
 from lightgbm import Dataset
 
-from simba.mobi.rumboost.metrics import cross_entropy
-from simba.mobi.rumboost.nested_cross_nested import nest_probs, cross_nested_probs
-from simba.mobi.rumboost.utils import (
+from src.simba.mobi.rumboost.metrics import cross_entropy
+from src.simba.mobi.rumboost.nested_cross_nested import nest_probs, cross_nested_probs
+from src.simba.mobi.rumboost.utils import (
     data_leaf_value,
     map_x_knots,
 )

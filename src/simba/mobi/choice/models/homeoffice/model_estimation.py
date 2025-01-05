@@ -17,12 +17,17 @@ from src.simba.mobi.choice.utils.biogeme import estimate_in_directory
 
 
 def estimate_choice_model_telecommuting(
-    df_zp: pd.DataFrame, output_directory: Path, intensity_cutoff: int = None, df_zp_test: pd.DataFrame = None, year: int = None
+    df_zp: pd.DataFrame,
+    output_directory: Path,
+    intensity_cutoff: int = None,
+    df_zp_test: pd.DataFrame = None,
+    year: int = None,
+    seed: int = None,
 ) -> None:
     year_name = f"{year}" if year else "2015_2020_2021"
     output_directory = output_directory / f"models/estimation/{year_name}/"
     output_directory.mkdir(parents=True, exist_ok=True)
-    run_estimation(df_zp, output_directory, intensity_cutoff, df_zp_test)
+    run_estimation(df_zp, output_directory, intensity_cutoff, df_zp_test, seed)
 
 
 def run_estimation(
@@ -30,16 +35,18 @@ def run_estimation(
     output_directory: Path,
     intensity_cutoff: int = None,
     df_zp_test: pd.DataFrame = None,
+    seed: int = None,
 ) -> None:
     """
     :author: Antonin Danalet, based on the example '01logit.py' by Michel Bierlaire, EPFL, on biogeme.epfl.ch
 
     A binary logit model or ordinal logit model if intensity_cutoff is specified on the ability to work from home.
-    intensity_cutoff is a percentage that represents the boundaries of the telecommuting intensity categories."""
+    intensity_cutoff is a percentage that represents the boundaries of the telecommuting intensity categories.
+    """
     database = db.Database("persons", df_zp)
 
     define_variables(database)
-    
+
     dict_betas = get_dict_betas(intensity_cutoff)
 
     # The following statement allows you to use the names of the variable as Python variable.
@@ -146,9 +153,15 @@ def run_estimation(
     results = estimate_in_directory(the_biogeme, output_directory)
 
     df_parameters = results.getEstimatedParameters()
-    str_model = f"intensity{intensity_cutoff}" if intensity_cutoff else "possibility"
+    str_model = (
+        f"intensity{intensity_cutoff}_seed{seed}"
+        if intensity_cutoff
+        else f"possibility_seed{seed}"
+    )
     file_name = (
-        f"parameters_dcm_wfh_{str_model}_" + datetime.now().strftime("%Y_%m_%d-%H_%M") + ".csv"
+        f"parameters_dcm_wfh_{str_model}_"
+        + datetime.now().strftime("%Y_%m_%d-%H_%M")
+        + ".csv"
     )
     df_parameters.to_csv(output_directory / file_name)
 
@@ -158,7 +171,8 @@ def run_estimation(
             globals()[f"proba_{i}"] = Elem(the_proba, i)
 
         all_probs = {
-            f"prob_{i}": globals()[f"proba_{i}"] for i in range(100 // intensity_cutoff + 1)
+            f"prob_{i}": globals()[f"proba_{i}"]
+            for i in range(100 // intensity_cutoff + 1)
         }
 
         beta_values = results.getBetaValues()
@@ -174,23 +188,30 @@ def run_estimation(
         results_ = biogeme_obj.simulate(beta_values)
 
         # calculate metrics
-        metrics = calculate_metrics(df_zp["telecommuting_intensity"], results_.values, intensity_cutoff, tau_1_res)
+        metrics, intercept_mae, intercept_mse = calculate_metrics(
+            df_zp["telecommuting_intensity"].values.astype(int),
+            results_.values,
+            intensity_cutoff,
+            tau_1_res,
+        )
 
-        metrics_df = pd.DataFrame(metrics, index=['train'])
-    
+        metrics_df = pd.DataFrame(metrics, index=["train"])
+
     else:
         beta_values = results.getBetaValues()
 
         results_ = the_biogeme.simulate(beta_values)
 
-        metrics = calculate_metrics(df_zp["telecommuting"], results_.values)
+        metrics, _, _ = calculate_metrics(
+            df_zp["telecommuting"].values.astype(int), results_.values
+        )
 
-        metrics_df = pd.DataFrame(metrics, index=['train'])
+        metrics_df = pd.DataFrame(metrics, index=["train"])
 
-    #test the model on the test set
+    # test the model on the test set
     if df_zp_test is not None and intensity_cutoff:
 
-        database_test = db.Database('persons_test', df_zp_test)
+        database_test = db.Database("persons_test", df_zp_test)
 
         define_variables(database_test)
 
@@ -205,7 +226,10 @@ def run_estimation(
         for i in range(1, 100 // intensity_cutoff + 1):
             globals()[f"proba_{i}"] = Elem(the_proba, i)
 
-        all_probs = {f"prob_{i}": globals()[f"proba_{i}"] for i in range(100 // intensity_cutoff + 1)}
+        all_probs = {
+            f"prob_{i}": globals()[f"proba_{i}"]
+            for i in range(100 // intensity_cutoff + 1)
+        }
 
         beta_values = results.getBetaValues()
 
@@ -221,13 +245,20 @@ def run_estimation(
         results_ = biogeme_obj.simulate(beta_values)
 
         # calculate metrics
-        metrics = calculate_metrics(df_zp_test['telecommuting_intensity'], results_.values, intensity_cutoff, tau_1_res)
+        metrics, _, _ = calculate_metrics(
+            df_zp_test["telecommuting_intensity"].values.astype(int),
+            results_.values,
+            intensity_cutoff,
+            tau_1_res,
+            intercept_mae,
+            intercept_mse,
+        )
 
-        metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics, index=['test'])])
+        metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics, index=["test"])])
 
     elif df_zp_test is not None:
-        
-        database_test = db.Database('persons_test', df_zp_test)
+
+        database_test = db.Database("persons_test", df_zp_test)
 
         define_variables(database_test)
 
@@ -240,13 +271,15 @@ def run_estimation(
         biogeme_obj.modelName = "wfh_possibility_model_sbb_test"
         results_ = biogeme_obj.simulate(beta_values)
 
-        metrics = calculate_metrics(df_zp_test["telecommuting"], results_.values)
+        metrics, _, _ = calculate_metrics(
+            df_zp_test["telecommuting"].values.astype(int), results_.values
+        )
 
-        metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics, index=['test'])])
+        metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics, index=["test"])])
 
     file_name = (
-        f"metrics_wfh_{str_model}_" + datetime.now().strftime("%Y_%m_%d-%H_%M") + ".csv"
+        f"metrics_wfh_{str_model}_" 
+        # + datetime.now().strftime("%Y_%m_%d-%H_%M") 
+        + ".csv"
     )
     metrics_df.to_csv(output_directory / file_name)
-
-

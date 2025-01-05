@@ -82,18 +82,24 @@ def visualize_work_percentage(output_directory: Path) -> None:
     plt.savefig(output_directory / file_name)
 
 
-def mae(y_true, y_pred, tau_1):
+def mae(y_true, y_pred, tau_1, intercept=None):
     if tau_1 is not None:
         raw_value = tau_1 - np.log(y_pred[:, 0] / (1 - y_pred[:, 0]))
-        y_pred = raw_value
-    return np.mean(np.abs(y_true - y_pred))
+        # need to re-estimate the intercept
+        # V is treated as fixed therefore the intercept is the median of the residuals with MAE
+        intercept = np.median(y_true - raw_value) if not intercept else intercept
+        y_pred = raw_value + intercept
+    return np.mean(np.abs(y_true - y_pred)), intercept
 
 
-def mse(y_true, y_pred, tau_1):
+def mse(y_true, y_pred, tau_1, intercept=None):
     if tau_1 is not None:
         raw_value = tau_1 - np.log(y_pred[:, 0] / (1 - y_pred[:, 0]))
-        y_pred = raw_value
-    return np.mean((y_true - y_pred) ** 2)
+        # need to re-estimate the intercept
+        # V is treated as fixed therefore the intercept is the mean of the residuals with MSE
+        intercept = (y_true - raw_value).mean() if not intercept else intercept
+        y_pred = raw_value + intercept
+    return np.mean((y_true - y_pred) ** 2), intercept
 
 
 def emae(y_true, y_pred, intensity_cutoff):
@@ -125,13 +131,13 @@ def bin_cel(y_true, y_pred):
     return -np.mean(y_pred)
 
 
-def calculate_metrics(y_true, y_pred, intensity_cutoff=None, tau_1=None):
+def calculate_metrics(y_true, y_pred, intensity_cutoff=None, tau_1=None, intercept_mae=None, intercept_mse=None):
     metrics = {}
 
     if intensity_cutoff:
         cel_value = cel(y_true, y_pred)
-        mae_value = mae(y_true, y_pred, tau_1)
-        mse_value = mse(y_true, y_pred, tau_1)
+        mae_value, intercept_mae = mae(y_true, y_pred, tau_1, intercept_mae)
+        mse_value, intercept_mse = mse(y_true, y_pred, tau_1, intercept_mse)
         emae_value = emae(y_true, y_pred, intensity_cutoff)
         emse_value = emse(y_true, y_pred, intensity_cutoff)
         metrics["cel"] = cel_value
@@ -143,4 +149,4 @@ def calculate_metrics(y_true, y_pred, intensity_cutoff=None, tau_1=None):
         cel_value = bin_cel(y_true, y_pred)
         metrics["cel"] = cel_value
 
-    return metrics
+    return metrics, intercept_mae, intercept_mse
