@@ -91,6 +91,7 @@ def define_variables(df_zp, choice_var_name) -> pd.DataFrame:
         "no_post_school_educ",
         "secondary_education",
         "tertiary_education",
+        "WP",
         choice_var_name,
     ]
     new_df.loc[:, other_columns] = df_zp.loc[:, other_columns]

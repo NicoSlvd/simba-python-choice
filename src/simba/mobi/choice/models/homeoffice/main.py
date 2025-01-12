@@ -16,6 +16,9 @@ from src.simba.mobi.choice.models.homeoffice.model_estimation import (
 from src.simba.mobi.choice.models.homeoffice.rumboost_estimation import (
     train_rumboost_telecommuting,
 )
+from src.simba.mobi.choice.models.homeoffice.linearised_model_estimation import (
+    estimate_linearised_model_telecommuting,
+)
 import gc
 import torch
 
@@ -75,12 +78,17 @@ def run_home_office_in_microcensus(
         train_rumboost_telecommuting(
             df_zp_train, output_directory, intensity_cutoff, df_zp_test, year, seed
         )
+    elif estimator == "linearised_model":
+        estimate_linearised_model_telecommuting(
+            df_zp_train, output_directory, intensity_cutoff, df_zp_test, year, seed
+        )
 
 
 if __name__ == "__main__":
-    models = ["dcm", "rumboost"]
-    # models = ["rumboost"]
-    intensity_cutoffs = [20, 10, 0]
+    # models = ["dcm", "rumboost"]
+    models = ["linearised_model"]
+    # intensity_cutoffs = [20, 10, 0]
+    intensity_cutoffs = [0]
 
     for model in models:
         for cutoff in intensity_cutoffs:
@@ -90,11 +98,16 @@ if __name__ == "__main__":
                         "output"
                     ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
                     path = path / f"metrics_wfh_intensity{cutoff}_seed{seed}_.csv" if cutoff else path / f"metrics_wfh_possibility_seed{seed}_.csv"
-                else:
+                elif model == "rumboost":
                     path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
                         "output"
                     ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
                     path = path / f"rumboost_metrics_wfh_intensity{cutoff}_seed{seed}_.csv" if cutoff else path / f"rumboost_metrics_wfh_possibility_seed{seed}_.csv"
+                elif model == "linearised_model":
+                    path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
+                        "output"
+                    ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
+                    path = path / f"lm_metrics_wfh_intensity{cutoff}_seed{seed}_.csv" if cutoff else path / f"lm_model_metrics_wfh_possibility_seed{seed}_.csv"
 
                 if path.exists():
                     print(f"File already exists, skipping {model} with intensity_cutoff={cutoff}, seed={seed}")
