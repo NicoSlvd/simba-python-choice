@@ -5,11 +5,11 @@ import geopandas
 import numpy as np
 import openmatrix as omx
 import pandas as pd
-from model_definition import (
+
+from src.simba.mobi.choice.models.homeoffice.model_definition import (
     define_telecommuting_variable,
     define_telecommuting_intensity_variable,
 )
-
 from src.simba.mobi.choice.models.homeoffice.constants import hh_columns
 from src.simba.mobi.choice.models.homeoffice.constants import zp_columns
 from src.simba.mobi.mzmv.config import path_to_mtmc_data
@@ -26,11 +26,14 @@ def get_data(input_directory: Path, intensity_cutoff: int = None) -> pd.DataFram
             path_to_data_folder_for_all_years / "persons.csv", sep=";"
         )
     else:
-        df_zp_2015 = get_data_per_year(2015, intensity_cutoff=intensity_cutoff)
-        df_zp_2020 = get_data_per_year(2020, intensity_cutoff=intensity_cutoff)
-        df_zp_2021 = get_data_per_year(2021, intensity_cutoff=intensity_cutoff)
-        df_zp_2015_2020 = merge_data_files(df_zp_2015, df_zp_2020)
-        df_zp_2015_2020_2021 = merge_data_files(df_zp_2015_2020, df_zp_2021)
+        # df_zp_2015 = get_data_per_year(2015, intensity_cutoff=intensity_cutoff)
+        # df_zp_2020 = get_data_per_year(2020, intensity_cutoff=intensity_cutoff)
+        # df_zp_2021 = get_data_per_year(2021, intensity_cutoff=intensity_cutoff)
+        df_zp_2015_2020_2021 = get_data_per_year(
+            2021, intensity_cutoff=intensity_cutoff
+        )
+        # df_zp_2015_2020 = merge_data_files(df_zp_2015, df_zp_2020)
+        # df_zp_2015_2020_2021 = merge_data_files(df_zp_2015_2020, df_zp_2021)
         path_to_data_folder_for_all_years.mkdir(parents=True, exist_ok=True)
         df_zp_2015_2020_2021.to_csv(
             path_to_data_folder_for_all_years / "persons.csv", sep=";", index=False
@@ -51,11 +54,21 @@ def merge_data_files(df_zp1: pd.DataFrame, df_zp2: pd.DataFrame) -> pd.DataFrame
 
 def get_data_per_year(year: int, intensity_cutoff: int = None) -> pd.DataFrame:
     # Input daten
-    path_to_mobi_server = Path(r"\\wsbbrz0283\mobi")
-    path_to_mobi_zones = (path_to_mobi_server / r"50_Ergebnisse\MOBi_3.1\plans\3.1.4.2020")
-    path_to_npvm_zones = (path_to_mobi_server.joinpath("10_Daten").joinpath("NPVM_Zonen").joinpath(
-        "Verkehrszonen_Schweiz_NPVM_2017").joinpath("Verkehrszonen_Schweiz_NPVM_2017_zone_id.gpkg"))
-    path_to_skim_file = (path_to_mobi_server / r"50_Ergebnisse/MOBi_3.2/plans/3.2_2017_10pct/")
+    # path_to_mobi_server = Path(r"\\wsbbrz0283\mobi")
+    # path_to_mobi_zones = (path_to_mobi_server / r"50_Ergebnisse\MOBi_3.1\plans\3.1.4.2020")
+    # path_to_npvm_zones = (path_to_mobi_server.joinpath("10_Daten").joinpath("NPVM_Zonen").joinpath(
+    #     "Verkehrszonen_Schweiz_NPVM_2017").joinpath("Verkehrszonen_Schweiz_NPVM_2017_zone_id.gpkg"))
+    # path_to_skim_file = (path_to_mobi_server / r"50_Ergebnisse/MOBi_3.2/plans/3.2_2017_10pct/")
+    # CHANGED
+    path_to_data = Path(
+        r"C:\Users\ucesnjs\OneDrive - University College London\Documents\PhD - UCL\choice_set_location_travelmode\Data"
+    )
+    path_to_npvm_zones = (
+        path_to_data
+        / r"Zone\Verkehrszonen_Schweiz_NPVM_2017\Verkehrszonen_Schweiz_NPVM_2017_gpkg\Verkehrszonen_Schweiz_NPVM_2017.gpkg"
+    )
+    path_to_mobi_zones = path_to_data / r"skims_zone_to_zone_2017"
+    path_to_skim_file = path_to_data / r"skims_zone_to_zone_2017"
 
     # Generate the data
     df_zp = generate_data_file(
@@ -108,9 +121,9 @@ def generate_data_file(
     df_hhp = get_hhp(year, path_to_mtmc_data, selected_columns=["HHNR", "alter"])
 
     df_zp = add_number_of_children(df_zp, df_hhp, age_limit=21)
-    del df_zp["hhgr"]
+    df_zp = df_zp.rename(columns={"hhgr":"hh_size"})
 
-    # df_zp = add_number_of_driving_licence(df_zp, df_hhp)
+    df_zp = add_number_of_driving_licence(df_zp, df_hhp)
 
     """ Generate the variable about work position:
     Code FaLC in English     FaLC in German   NPVM                       Code used below
@@ -443,16 +456,17 @@ def add_accessibility(
     )
     df_zp.to_crs(epsg=2056, inplace=True)
     # Read the Geopackage file containing the zones. Proj: 2056, CH1903+
-    df_zones = geopandas.read_file(path_to_npvm_zones)
+    # df_zones = geopandas.read_file(path_to_npvm_zones)
+    df_zones = geopandas.read_file(path_to_mobi_zones / r"mobi-zones.shp")
     df_zp = geopandas.sjoin(
-        df_zp, df_zones[["zone_id", "geometry"]], how="left", predicate="intersects" 
+        df_zp, df_zones[["zone_id", "geometry"]], how="left", predicate="intersects"
     )
     df_zp.fillna({"zone_id": -999}, inplace=True)
     # Rename the column with the zone ID
     df_zp.rename(columns={"zone_id": "zone_id_home"}, inplace=True)
 
     """ Add accessibility for home location """
-    path_to_mobi_zones_csv = path_to_mobi_zones / "mobi-zones.csv" 
+    path_to_mobi_zones_csv = path_to_mobi_zones / "mobi-zones.csv"
     with open(path_to_mobi_zones_csv, "r", encoding="latin1") as accessibility_file:
         df_accessibility = pd.read_csv(
             accessibility_file,
@@ -574,12 +588,14 @@ def add_home_work_distance(
     ]
 
     # Open skim file
-    skims = omx.open_file(path_to_skim_file / "skims.omx", "r") 
+    # skims = omx.open_file(path_to_skim_file / "skims.omx", "r")
+    # CHANGED
+    skims = omx.open_file(path_to_skim_file / "skims_mobi3.0_2017.omx", "r")
     # Load car network distance matrix as numpy array
     car_network_distance_matrix = np.array(skims["12"])
 
     """ Get MOBi traffic zones """
-    path_to_mobi_zones_shp = path_to_mobi_zones / "mobi-zones.shp" 
+    path_to_mobi_zones_shp = path_to_mobi_zones / "mobi-zones.shp"
     # Important: zone_ids must be in ascending order
     mobi_zones = geopandas.read_file(path_to_mobi_zones_shp).sort_values("zone_id")
     mobi_zones.crs = "EPSG:2056"
@@ -656,6 +672,8 @@ def add_spatial_typology(
     """Add the data about the spatial typology of the home address (in particular the home commune)"""
     df_zp = add_urban_typology(df_zp, year, field_bfs="W_BFS")
     df_zp = df_zp.rename(columns={"urban_typology": "urban_typology_home"})
+    # CHANGED
+    df_zp.fillna({"urban_typology_home": -99}, inplace=True)
 
     """ Add the data about the spatial typology of the work address (in particular the work commune) """
     df_zp = add_urban_typology(df_zp, year, field_bfs="A_BFS")
