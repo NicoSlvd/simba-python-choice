@@ -124,5 +124,8 @@ zp_columns = {
         "f41001b",
         "f41001c",
         "f20400a",
+        #new vars for ordinal logit
+        "f81200",
+        "f41300",
     ],
 }

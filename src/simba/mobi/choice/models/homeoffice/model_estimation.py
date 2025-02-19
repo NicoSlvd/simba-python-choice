@@ -98,15 +98,82 @@ def run_estimation(
         * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 5.0), 5.0))
         + dict_betas["beta_accsib_home_not_NA_10_24_21"]
         * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 10.0), 14.0))
+        if not intensity_cutoff
+        else
+        dict_betas["alternative_specific_constant"]
+        # + models.piecewiseFormula(age_1520, [18, 35])
+        # + models.piecewiseFormula(work_percentage_15, [0, 95, 101])
+        # + dict_betas["b_executives_1520"] * executives_1520
+        + dict_betas["b_german_speaking"] * german_speaking
+        + dict_betas["b_no_post_school_education"] * no_post_school_educ
+        + dict_betas["b_secondary_education"] * secondary_education
+        + dict_betas["b_tertiary_education"] * tertiary_education
+        # + dict_betas["b_rural_work_1520"] * rural_work_1520
+        + dict_betas["b_hh_income_na"] * hh_income_na
+        + dict_betas["b_hh_income_8000_or_less"] * hh_income_less_than_2000
+        + dict_betas["b_hh_income_8000_or_less"] * hh_income_2000_to_4000
+        + dict_betas["b_hh_income_8000_or_less"] * hh_income_4001_to_6000
+        + dict_betas["b_hh_income_8000_or_less"] * hh_income_6001_to_8000
+        + dict_betas["b_number_of_children"] * number_of_children_not_NA
+        + dict_betas["b_number_of_children_NA"] * number_of_children_NA
+        + dict_betas["b_single_household"] * single_household
+        + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax
+        + models.piecewiseFormula(home_work_distance_car, [0, 0.15])
+        + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA
+        # + dict_betas["b_is_agriculture_1_15"] * business_sector_agriculture_15
+        # + dict_betas["b_is_production_1520"] * business_sector_production_1520
+        # + dict_betas["b_is_wohlesale_1520"] * business_sector_wholesale_1520
+        # + dict_betas["b_is_falc_id_6to9_1520"] * is_falc_id_6to9_1520
+        + dict_betas["b_falc_id_NA"] * falc_id_NA
+        # + dict_betas["beta_accsib_home_not_NA_5_10_1520"]
+        # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 5.0), 5.0))
+        # + dict_betas["beta_accsib_home_not_NA_10_24_1520"]
+        # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 10.0), 14.0))
+        # + dict_betas["beta_work_percentage_0_95_20"]
+        # * bioMax(0.0, bioMin((work_percentage_20 - 0.0), 95.0))
+        + dict_betas["beta_work_percentage_95_101_20_21"]
+        * bioMax(0.0, bioMin((work_percentage_20_21 - 95.0), 6.0))
+        + models.piecewiseFormula(age_21, [18, 35])
+        + dict_betas["beta_work_percentage_0_95_21"]
+        * bioMax(0.0, bioMin((work_percentage_21 - 0.0), 95.0))
+        + dict_betas["b_executives_21"] * executives_21
+        + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21
+        + dict_betas["b_is_production_1_21"] * business_sector_production_21
+        + dict_betas["b_is_wohlesale_1_21"] * business_sector_wholesale_21
+        + dict_betas["b_is_falc_id_6to9_1_21"] * is_falc_id_6to9_21
+        + dict_betas["beta_accsib_home_not_NA_5_10_21"]
+        * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 5.0), 5.0))
+        + dict_betas["beta_accsib_home_not_NA_10_24_21"]
+        * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 10.0), 14.0))
+        + dict_betas["b_hh_size"] * hh_size
+        + dict_betas["b_identified_as_male"] * identified_as_male
+        + dict_betas["b_nb_of_cars_NA"] * nb_of_cars_NA
+        + dict_betas["b_nb_of_cars_not_NA"] * nb_of_cars_not_NA
+        + dict_betas["b_car_avail_NA"] * car_avail_NA
+        + dict_betas["b_car_avail_not_NA_always"] * car_avail_not_NA_always
+        + dict_betas["b_car_avail_not_NA_on_demand"] * car_avail_not_NA_on_demand
+        + dict_betas["b_has_driving_licence_NA"] * has_driving_licence_NA
+        + dict_betas["b_has_driving_licence_not_NA"] * has_driving_licence_not_NA
+        + dict_betas["b_work_time_flexibility_NA"] * work_time_flexibility_NA
+        + dict_betas["b_work_time_flexibility_not_NA_fixed"] * work_time_flexibility_not_NA_fixed
+        + dict_betas["b_work_parking_NA"] * work_parking_NA
+        + dict_betas["b_work_parking_not_NA_free"] * work_parking_not_NA_free
+        + dict_betas["b_is_swiss"] * is_swiss
+        + dict_betas["b_typology_work_NA"] * typology_work_NA
+        + dict_betas["b_typology_work_not_NA_urban"] * typology_work_not_NA_urban
+        + dict_betas["b_typology_work_not_NA_rural"] * typology_work_not_NA_rural
+        + dict_betas["b_typology_home_urban"] * typology_home_urban
+        + dict_betas["b_typology_home_rural"] * typology_home_rural
+            
     )
     U_no_telecommuting = 0
 
     # Scale associated with 2020 is estimated
-    scale = (
-        (year == 2015)
-        + (year == 2020) * dict_betas["scale_2020"]
-        + (year == 2021) * dict_betas["scale_2021"]
-    )
+    # scale = (
+    #     (year == 2015)
+    #     + (year == 2020) * dict_betas["scale_2020"]
+    #     + (year == 2021) * dict_betas["scale_2021"]
+    # )
 
     # Thresholds if ordinal logit
     if intensity_cutoff:
@@ -126,7 +193,7 @@ def run_estimation(
     # Definition of the model. This is the contribution of each observation to the log likelihood function.
     # Choice variable: "telecommuting"
     if intensity_cutoff:
-        model_name = f"wfh_intensity{intensity_cutoff}_model_sbb_seed{seed}"
+        model_name = f"wfh_intensity{intensity_cutoff}_model_sbb_all_vars_seed{seed}"
 
         the_proba = models.ordered_logit(
             continuous_value=V,
@@ -154,7 +221,7 @@ def run_estimation(
 
     df_parameters = results.getEstimatedParameters()
     str_model = (
-        f"intensity{intensity_cutoff}_seed{seed}"
+        f"intensity{intensity_cutoff}_all_vars_seed{seed}"
         if intensity_cutoff
         else f"possibility_seed{seed}"
     )
@@ -182,7 +249,7 @@ def run_estimation(
         biogeme_obj = bio.BIOGEME(database, all_probs)
         biogeme_obj.generate_pickle = False
         biogeme_obj.generate_html = False
-        biogeme_obj.modelName = "wfh_intensity_model_sbb_train"
+        biogeme_obj.modelName = "wfh_intensity_model_all_vars_sbb_train"
 
         # Simulate probabilities for each class
         results_ = biogeme_obj.simulate(beta_values)
@@ -239,7 +306,7 @@ def run_estimation(
         biogeme_obj = bio.BIOGEME(database_test, all_probs)
         biogeme_obj.generate_pickle = False
         biogeme_obj.generate_html = False
-        biogeme_obj.modelName = "wfh_intensity_model_sbb_test"
+        biogeme_obj.modelName = "wfh_intensity_model_all_vars_sbb_test"
 
         # Simulate probabilities for each class
         results_ = biogeme_obj.simulate(beta_values)

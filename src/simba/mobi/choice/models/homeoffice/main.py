@@ -1,3 +1,8 @@
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", ".."))
+
 from pathlib import Path
 from argparse import ArgumentParser, BooleanOptionalAction
 
@@ -37,7 +42,10 @@ def run_home_office_in_microcensus(
     df_zp = get_data(input_directory, intensity_cutoff=intensity_cutoff)
     df_zp = df_zp[df_zp["year"] == year] if year else df_zp
     if data_intensity_only or intensity_cutoff:
+        #only keep the data where telecommuting is available
         df_zp = df_zp[df_zp["telecommuting"] > 0]
+        #remove missing observations
+        df_zp = df_zp[df_zp["percentage_telecommuting"] >= 0]
     if data_intensity_only:
         # new dependant variable for comparing binary logit and ordinal logit
         # on the data where telecommuting is available
@@ -45,13 +53,7 @@ def run_home_office_in_microcensus(
             lambda x: 1 if x > 0 else 0
         )
     # need to recompute teleworking intensity variable to a different level
-    # if the pre-processed dataset persons.csv is not regenerated from scratch
-    if intensity_cutoff > 0 and len(df_zp["telecommuting_intensity"].unique()) != (100 // intensity_cutoff + 1):
-        df_zp["telecommuting_intensity"] = df_zp.apply(
-            define_telecommuting_intensity_variable,
-            axis=1,
-            intensity_cutoff=intensity_cutoff,
-        )
+
     # split the data into training and testing
     df_zp_train, df_zp_test = (
         train_test_split(df_zp, test_size=test_size, random_state=seed)
@@ -86,9 +88,10 @@ def run_home_office_in_microcensus(
 
 if __name__ == "__main__":
     # models = ["dcm", "rumboost"]
-    models = ["linearised_model"]
+    models = ["rumboost"]
+    # models = ["linearised_model"]
     # intensity_cutoffs = [20, 10, 0]
-    intensity_cutoffs = [0]
+    intensity_cutoffs = [20]
 
     for model in models:
         for cutoff in intensity_cutoffs:
@@ -97,17 +100,17 @@ if __name__ == "__main__":
                     path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
                         "output"
                     ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
-                    path = path / f"metrics_wfh_intensity{cutoff}_seed{seed}_.csv" if cutoff else path / f"metrics_wfh_possibility_seed{seed}_.csv"
+                    path = path / f"metrics_wfh_intensity{cutoff}_all_vars_seed{seed}_.csv" if cutoff else path / f"metrics_wfh_possibility_seed{seed}_.csv"
                 elif model == "rumboost":
                     path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
                         "output"
                     ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
-                    path = path / f"rumboost_metrics_wfh_intensity{cutoff}_seed{seed}_.csv" if cutoff else path / f"rumboost_metrics_wfh_possibility_seed{seed}_.csv"
+                    path = path / f"rumboost_metrics_wfh_intensity{cutoff}_all_vars_seed{seed}_.csv" if cutoff else path / f"rumboost_metrics_wfh_possibility_seed{seed}_.csv"
                 elif model == "linearised_model":
                     path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
                         "output"
                     ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
-                    path = path / f"lm_metrics_wfh_intensity{cutoff}_seed{seed}_.csv" if cutoff else path / f"lm_model_metrics_wfh_possibility_seed{seed}_.csv"
+                    path = path / f"rumboost_metrics_wfh_intensity{cutoff}_seed{seed}_.csv" if cutoff else path / f"rumboost_metrics_wfh_possibility_seed{seed}_.csv"
 
                 if path.exists():
                     print(f"File already exists, skipping {model} with intensity_cutoff={cutoff}, seed={seed}")

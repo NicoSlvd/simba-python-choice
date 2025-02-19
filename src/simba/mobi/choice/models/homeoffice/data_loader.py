@@ -118,7 +118,7 @@ def generate_data_file(
     df_zp = add_spatial_typology(df_zp, year)
 
     """ Get information about the members of the household """
-    df_hhp = get_hhp(year, path_to_mtmc_data, selected_columns=["HHNR", "alter"])
+    df_hhp = get_hhp(year, path_to_mtmc_data, selected_columns=["HHNR", "alter", "f20400a"])
 
     df_zp = add_number_of_children(df_zp, df_hhp, age_limit=21)
     df_zp = df_zp.rename(columns={"hhgr":"hh_size"})
@@ -192,6 +192,9 @@ def generate_data_file(
             "F20601": "hh_income",  # naming 2015
             "f20601": "hh_income",  # naming 2020
             "f42100e": "car_avail",
+            #new vars for ordinal model
+            "f41300": "parking_place_at_work",
+            "f81200": "work_time_flexibility",
         }
     )
     df_zp["mobility_resources"] = df_zp.apply(
@@ -413,7 +416,7 @@ def add_number_of_driving_licence(
         .rename(columns={"alter": "nb_driving_licences"})
     )
     df_zp = df_zp.merge(nb_driving_licence_per_hh, on="HHNR", how="left")
-    df_zp["nb_driving_licences"].fillna(0, inplace=True)
+    df_zp["nb_driving_licences"] = df_zp["nb_driving_licences"].fillna(0)
     return df_zp
 
 

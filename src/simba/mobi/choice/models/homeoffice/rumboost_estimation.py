@@ -144,7 +144,7 @@ def train_rumb(
         torch_run = False
 
     str_model = (
-        f"intensity{intensity_cutoff}_seed{seed}"
+        f"intensity{intensity_cutoff}_all_vars_seed{seed}"
         if intensity_cutoff
         else f"possibility_seed{seed}"
     )
@@ -196,5 +196,12 @@ def train_rumb(
     )
     metrics_df.to_csv(output_directory / file_name)
 
-    # figures
-    # plot_parameters(final_model, df_train, {"0": "Binary"}, save_file='output/figures/rumboost_with_intensity_alldata')
+    # weird bug with plot_parameters, FileNotFoundError: [Errno 2] No such file or directory for work_time_flexibility_not_NA_fixed. path too long? plot empty?
+    # plot_parameters(
+    #     model,
+    #     new_df_train,
+    #     {"0": "Utility"},
+    #     save_file=output_directory / "figures" / f"{str_model}",
+    #     no_output=True,
+    # )
+

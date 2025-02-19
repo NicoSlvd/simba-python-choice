@@ -87,6 +87,26 @@ def define_variables(df_zp, choice_var_name) -> pd.DataFrame:
     new_df["business_sector_production_1520"] = df_zp["business_sector_production"] * ((df_zp["year"] == 2015) + (df_zp["year"] == 2020))
     new_df["business_sector_wholesale_1520"] = df_zp["business_sector_wholesale"] * ((df_zp["year"] == 2015) + (df_zp["year"] == 2020))
 
+    #new vars for ordinal model
+    new_df['identified_as_male'] = (df_zp['sex'] == 1).astype(int)
+    new_df['nb_of_cars_NA'] = (df_zp['nb_of_cars'] < 0).astype(int)
+    new_df['nb_of_cars_not_NA'] = (df_zp['nb_of_cars'] >= 0).astype(int) * df_zp['nb_of_cars']
+    new_df['car_avail_NA'] = (df_zp['car_avail'] < 0).astype(int)
+    new_df['car_avail_not_NA_always'] = (df_zp['car_avail'] == 1).astype(int) * df_zp['car_avail']
+    new_df['car_avail_not_NA_on_demand'] = (df_zp['car_avail'] == 2).astype(int) * df_zp['car_avail']
+    new_df['has_driving_licence_NA'] = (df_zp['has_driving_licence'] < 0).astype(int)
+    new_df['has_driving_licence_not_NA'] = (df_zp['has_driving_licence'] == 1).astype(int) * df_zp['has_driving_licence']
+    new_df['work_time_flexibility_NA'] = (df_zp['work_time_flexibility'] < 0).astype(int)
+    new_df['work_time_flexibility_not_NA_fixed'] = (df_zp['work_time_flexibility'] == 1).astype(int) * df_zp['work_time_flexibility']
+    new_df['work_parking_NA'] = (df_zp['parking_place_at_work'] < 0).astype(int)
+    new_df['work_parking_not_NA_free'] = (df_zp['parking_place_at_work'] == 1).astype(int) * df_zp['parking_place_at_work']
+    new_df['is_swiss'] = (df_zp['nation'] == 8100).astype(int)
+    new_df['typology_work_NA'] = (df_zp['urban_typology_work'] < 0).astype(int)
+    new_df['typology_work_not_NA_urban'] = (df_zp['urban_typology_work'] == 1).astype(int) * df_zp['urban_typology_work']
+    new_df['typology_work_not_NA_rural'] = (df_zp['urban_typology_work'] == 2).astype(int) * df_zp['urban_typology_work']
+    new_df['typology_home_urban'] = (df_zp['urban_typology_home'] == 1).astype(int) * df_zp['urban_typology_home']
+    new_df['typology_home_rural'] = (df_zp['urban_typology_home'] == 2).astype(int) * df_zp['urban_typology_home']
+
     other_columns = [
         "no_post_school_educ",
         "secondary_education",
@@ -104,7 +124,7 @@ def define_variables(df_zp, choice_var_name) -> pd.DataFrame:
 
 def get_rumboost_rum_structure(new_df):
     
-    variables = [c for c in new_df.columns if c not in ["telecommuting_intensity", "telecommuting", "HHNR"]]
+    variables = [c for c in new_df.columns if c not in ["telecommuting_intensity", "telecommuting", "HHNR", "WP"]]
 
     monotone_constraints = [0] * len(variables)
     interaction_constraints = [[i] for i, _ in enumerate(variables)]
