@@ -30,6 +30,7 @@ def calibrate_constants(
     seed=0,
     tol=0.01,
     results_directory=os.getcwd() + r"\homeoffice\models\estimation\2021",
+    all_vars="",
     save_results=True,
 ):
     """
@@ -51,6 +52,8 @@ def calibrate_constants(
         The tolerance for the calibration of the constants.
     results_directory: str
         The directory where the results of the estimation are stored.
+    all_vars: str
+        The string to be used for the results file name if the models were estimated with all variables for ordinal models.
     save_results: bool
         Whether to save the results of the calibration.
 
@@ -81,6 +84,7 @@ def calibrate_constants(
         data_test,
         linearised_str=linearised_str,
         linearised=linearised,
+        all_vars=all_vars,
     )
 
     # initial market shares prediction
@@ -126,9 +130,9 @@ def calibrate_constants(
                 t *= 2
                 print(f"Increasing tolerance to {t}")
         if intensity_cutoff:
-            print(f"threshold {i} calibrated for model {model_type} and run {seed}")
+            print(f"threshold {i} calibrated for model {model_type} {all_vars} and run {seed}")
         else:
-            print(f"ASC calibrated for model {model_type} and run {seed}")
+            print(f"ASC calibrated for model {model_type} {all_vars} and run {seed}")
 
     if save_results:  # save the results
         if model_type == "dcm" or model_type == "linearised_model":
@@ -145,12 +149,12 @@ def calibrate_constants(
             # save metrics and parameters
             short_str = "lm_" if model_type == "linearised_model" else ""
             metrics_df.to_csv(
-                f"{results_directory}/{short_str}metrics_wfh_intensity{intensity_cutoff}_seed{seed}_calibrated.csv"
+                f"{results_directory}/{short_str}metrics_wfh_intensity{intensity_cutoff}_{all_vars}_seed{seed}_calibrated.csv"
                 if intensity_cutoff
                 else f"{results_directory}/{short_str}metrics_wfh_possibility_seed{seed}_calibrated.csv"
             )
             save_file = (
-                f"{results_directory}/parameters_dcm_{linearised_str}wfh_intensity{intensity_cutoff}_seed{seed}_calibrated.csv"
+                f"{results_directory}/parameters_dcm_{linearised_str}wfh_intensity{intensity_cutoff}_{all_vars}_seed{seed}_calibrated.csv"
                 if intensity_cutoff
                 else f"{results_directory}/parameters_dcm_{linearised_str}wfh_possibility_seed{seed}_calibrated.csv"
             )
@@ -164,13 +168,13 @@ def calibrate_constants(
 
             # save metrics and model
             metrics_df.to_csv(
-                f"{results_directory}/rumboost_metrics_wfh_intensity{intensity_cutoff}_seed{seed}_calibrated.csv"
+                f"{results_directory}/rumboost_metrics_wfh_intensity{intensity_cutoff}_{all_vars}_seed{seed}_calibrated.csv"
                 if intensity_cutoff
                 else f"{results_directory}/rumboost_metrics_wfh_possibility_seed{seed}_calibrated.csv"
             )
 
             save_file = (
-                f"{results_directory}/rumboost_model_wfh_intensity{intensity_cutoff}_seed{seed}_calibrated.json"
+                f"{results_directory}/rumboost_model_wfh_intensity{intensity_cutoff}_{all_vars}_seed{seed}_calibrated.json"
                 if intensity_cutoff
                 else f"{results_directory}/rumboost_model_wfh_possibility_seed{seed}_calibrated.json"
             )
@@ -310,12 +314,13 @@ def load_model_and_betas(
     df_dcm=None,
     linearised=False,
     linearised_str="",
+    all_vars="",
 ):
     """Load the model and the betas from the estimation results"""
     if model_type == "dcm" or model_type == "linearised_model":
         if intensity_cutoff:
             results_file = glob.glob(
-                f"{results_directory}/parameters_dcm_{linearised_str}wfh_intensity{intensity_cutoff}_seed{seed}_*.csv"
+                f"{results_directory}/parameters_dcm_{linearised_str}wfh_intensity{intensity_cutoff}_{all_vars}_seed{seed}_*.csv"
             )[0]
         else:
             results_file = glob.glob(
@@ -338,7 +343,7 @@ def load_model_and_betas(
         data_test = define_variables(data_test, choice)
         if intensity_cutoff:
             results_file = glob.glob(
-                f"{results_directory}/rumboost_model_wfh_intensity{intensity_cutoff}_seed{seed}_*.json"
+                f"{results_directory}/rumboost_model_wfh_intensity{intensity_cutoff}_{all_vars}_seed{seed}_*.json"
             )[0]
         else:
             results_file = glob.glob(
