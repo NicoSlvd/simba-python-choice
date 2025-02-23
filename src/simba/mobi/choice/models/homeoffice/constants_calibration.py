@@ -149,12 +149,12 @@ def calibrate_constants(
             # save metrics and parameters
             short_str = "lm_" if model_type == "linearised_model" else ""
             metrics_df.to_csv(
-                f"{results_directory}/{short_str}metrics_wfh_intensity{intensity_cutoff}_{all_vars}_seed{seed}_calibrated.csv"
+                f"{results_directory}/{short_str}metrics_wfh_intensity{intensity_cutoff}{all_vars}_seed{seed}_calibrated.csv"
                 if intensity_cutoff
                 else f"{results_directory}/{short_str}metrics_wfh_possibility_seed{seed}_calibrated.csv"
             )
             save_file = (
-                f"{results_directory}/parameters_dcm_{linearised_str}wfh_intensity{intensity_cutoff}_{all_vars}_seed{seed}_calibrated.csv"
+                f"{results_directory}/parameters_dcm_{linearised_str}wfh_intensity{intensity_cutoff}{all_vars}_seed{seed}_calibrated.csv"
                 if intensity_cutoff
                 else f"{results_directory}/parameters_dcm_{linearised_str}wfh_possibility_seed{seed}_calibrated.csv"
             )
@@ -168,13 +168,13 @@ def calibrate_constants(
 
             # save metrics and model
             metrics_df.to_csv(
-                f"{results_directory}/rumboost_metrics_wfh_intensity{intensity_cutoff}_{all_vars}_seed{seed}_calibrated.csv"
+                f"{results_directory}/rumboost_metrics_wfh_intensity{intensity_cutoff}{all_vars}_seed{seed}_calibrated.csv"
                 if intensity_cutoff
                 else f"{results_directory}/rumboost_metrics_wfh_possibility_seed{seed}_calibrated.csv"
             )
 
             save_file = (
-                f"{results_directory}/rumboost_model_wfh_intensity{intensity_cutoff}_{all_vars}_seed{seed}_calibrated.json"
+                f"{results_directory}/rumboost_model_wfh_intensity{intensity_cutoff}{all_vars}_seed{seed}_calibrated.json"
                 if intensity_cutoff
                 else f"{results_directory}/rumboost_model_wfh_possibility_seed{seed}_calibrated.json"
             )
@@ -343,13 +343,14 @@ def load_model_and_betas(
         data_test = define_variables(data_test, choice)
         if intensity_cutoff:
             results_file = glob.glob(
-                f"{results_directory}/rumboost_model_wfh_intensity{intensity_cutoff}_{all_vars}_seed{seed}_*.json"
+                f"{results_directory}/rumboost_model_wfh_intensity{intensity_cutoff}{all_vars}_seed{seed}_*.json"
             )[0]
         else:
             results_file = glob.glob(
                 f"{results_directory}/rumboost_model_wfh_possibility_seed{seed}_*.json"
             )[0]
         model = RUMBoost(model_file=results_file)
+        model.device = None
         weights = weights_to_plot_v2(model)["0"]
         model.asc = np.sum([v["Histogram values"][0] for v in weights.values()])
         betas = None

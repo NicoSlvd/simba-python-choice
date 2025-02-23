@@ -42,7 +42,7 @@ from src.simba.mobi.rumboost.utils import optimise_asc
 
 try:
     import torch
-    from simba.mobi.rumboost.torch_functions import (
+    from src.simba.mobi.rumboost.torch_functions import (
         _inner_predict_torch,
         _inner_predict_torch_compiled,
         _f_obj_torch,
@@ -56,11 +56,6 @@ try:
         _f_obj_cross_nested_torch,
         _f_obj_cross_nested_torch_compiled,
         _f_obj_proportional_odds_torch,
-        _f_obj_proportional_odds_torch_compiled,
-        _f_obj_coral_torch,
-        _f_obj_coral_torch_compiled,
-        _f_obj_corn_torch,
-        _f_obj_corn_torch_compiled,
         cross_entropy_torch,
         cross_entropy_torch_compiled,
         binary_cross_entropy_torch,
@@ -985,20 +980,12 @@ class RUMBoost:
             The hessian with the cross-entropy loss function and proportional odds probabilities (second derivative approximation rather than the hessian).
         """
         if self.device is not None:
-            if self.torch_compile:
-                grad, hess = _f_obj_proportional_odds_torch_compiled(
-                    self.labels[self.subsample_idx],
-                    self._preds,
-                    self.raw_preds[self.subsample_idx],
-                    self.thresholds,
-                )
-            else:
-                grad, hess = _f_obj_proportional_odds_torch(
-                    self.labels[self.subsample_idx],
-                    self._preds,
-                    self.raw_preds[self.subsample_idx],
-                    self.thresholds,
-                )
+            grad, hess = _f_obj_proportional_odds_torch(
+                self.labels[self.subsample_idx],
+                self._preds,
+                self.raw_preds[self.subsample_idx],
+                self.thresholds,
+            )
 
             grad = grad.cpu().type(torch.float32).numpy()
             hess = hess.cpu().type(torch.float32).numpy()
@@ -1017,7 +1004,7 @@ class RUMBoost:
         labels = self.labels[self.subsample_idx]
         preds = self._preds
         thresholds = self.thresholds
-        thresholds = np.append(thresholds, 0)
+        thresholds = np.append(thresholds, np.inf)
         raw_preds = self.raw_preds[self.subsample_idx]
         grad = np.where(
             labels == 0,
@@ -2125,7 +2112,7 @@ class RUMBoost:
                     "nest_alt": self.nest_alt,
                     "ord_model": self.ord_model,
                     "thresholds": (
-                        self.thresholds.cpu().numpy().tolist()
+                        self.thresholds.tolist()
                         if self.thresholds is not None
                         else None
                     ),

@@ -210,11 +210,11 @@ def define_variables(database: pd.DataFrame) -> None:
     )
     car_avail_not_NA_always = database.DefineVariable(
         "car_avail_not_NA_always",
-        (car_avail == 1) * car_avail
+        (car_avail == 1)
     )
     car_avail_not_NA_on_demand = database.DefineVariable(
         "car_avail_not_NA_on_demand",
-        (car_avail == 2) * car_avail
+        (car_avail == 2)
     )
     has_driving_licence_NA = database.DefineVariable(
         "has_driving_licence_NA",
@@ -222,7 +222,7 @@ def define_variables(database: pd.DataFrame) -> None:
     )
     has_driving_licence_not_NA = database.DefineVariable(
         "has_driving_licence_not_NA",
-        (has_driving_licence == 1) * has_driving_licence
+        (has_driving_licence == 1)
     )
     work_time_flexibility_NA = database.DefineVariable(
         "work_time_flexibility_NA",
@@ -230,7 +230,7 @@ def define_variables(database: pd.DataFrame) -> None:
     )
     work_time_flexibility_not_NA_fixed = database.DefineVariable(
         "work_time_flexibility_not_NA_fixed",
-        (work_time_flexibility == 1) * work_time_flexibility
+        (work_time_flexibility == 1)
     )
     work_parking_NA = database.DefineVariable(
         "work_parking_NA",
@@ -238,7 +238,7 @@ def define_variables(database: pd.DataFrame) -> None:
     )
     work_parking_not_NA_free = database.DefineVariable(
         "work_parking_not_NA_free",
-        (parking_place_at_work == 1) * parking_place_at_work
+        (parking_place_at_work == 1)
     )
     is_swiss = database.DefineVariable(
         "is_swiss",
@@ -250,19 +250,19 @@ def define_variables(database: pd.DataFrame) -> None:
     )
     typology_work_not_NA_urban = database.DefineVariable(
         "typology_work_not_NA_urban",
-        (urban_typology_work == 1) * urban_typology_work
+        (urban_typology_work == 1)
     )
     typology_work_not_NA_rural = database.DefineVariable(
         "typology_work_not_NA_rural",
-        (urban_typology_work == 2) * urban_typology_work
+        (urban_typology_work == 2) 
     )
     typology_home_urban = database.DefineVariable(
         "typology_home_urban",
-        (urban_typology_home == 1) * urban_typology_home
+        (urban_typology_home == 1) 
     )
     typology_home_rural = database.DefineVariable(
         "typology_home_rural",
-        (urban_typology_home == 2) * urban_typology_home
+        (urban_typology_home == 2) 
     )
 
 def get_dict_betas(intensity_cutoff: int = None) -> dict:
@@ -416,7 +416,7 @@ def return_model(df_zp, intensity_cutoff, df_zp_test=None, linearised=False):
                 + dict_betas["b_single_household"] * single_household
                 + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax
                 + models.piecewiseFormula(
-                    home_work_distance_car_short, [0.0001, 0.005, 0.19]
+                    home_work_distance_car_short, [None, 0.0001, 0.005, 0.19, None]
                 )  # linearised from rumboost
                 + dict_betas["b_home_work_distance_car_long"] * home_work_distance_car_long
                 + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA
@@ -434,16 +434,16 @@ def return_model(df_zp, intensity_cutoff, df_zp_test=None, linearised=False):
                 # + dict_betas["beta_work_percentage_95_101_20_21"]
                 # * bioMax(0.0, bioMin((work_percentage_20_21 - 95.0), 6.0))
                 + models.piecewiseFormula(
-                    age_21, [17, 21, 35, 61, 83]
+                    age_21, [None, 17, 21, 35, 61, 83, None]
                 )  # linearised from rumboost
-                + models.piecewiseFormula(work_percentage_21, [3.5, 4.5, 28, 31, 39, 84])
+                + models.piecewiseFormula(work_percentage_21, [None, 3.5, 4.5, 28, 31, 39, 84, None])
                 + dict_betas["b_executives_21"] * executives_21
                 + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21
                 + dict_betas["b_is_production_1_21"] * business_sector_production_21
                 + dict_betas["b_is_wohlesale_1_21"] * business_sector_wholesale_21
                 + dict_betas["b_is_falc_id_6to9_1_21"] * is_falc_id_6to9_21
                 + models.piecewiseFormula(
-                    accsib_home_not_NA_21, [0.2, 0.45, 0.6, 1.4, 9.1, 15, 95, 16.05]
+                    accsib_home_not_NA_21, [None, 0.2, 0.45, 0.6, 1.4, 9.1, 15, 16.05, 95, None]
                 )  # linearised from rumboost
             )
             if linearised
@@ -497,6 +497,79 @@ def return_model(df_zp, intensity_cutoff, df_zp_test=None, linearised=False):
         )
     else:
         U = (
+            (
+                dict_betas["alternative_specific_constant"]
+                # + models.piecewiseFormula(age_1520, [18, 35])
+                # + models.piecewiseFormula(work_percentage_15, [0, 95, 101])
+                # + dict_betas["b_executives_1520"] * executives_1520
+                + dict_betas["b_german_speaking"] * german_speaking
+                + dict_betas["b_no_post_school_education"] * no_post_school_educ
+                + dict_betas["b_secondary_education"] * secondary_education
+                + dict_betas["b_tertiary_education"] * tertiary_education
+                # + dict_betas["b_rural_work_1520"] * rural_work_1520
+                + dict_betas["b_hh_income_na"] * hh_income_na
+                + dict_betas["b_hh_income_8000_or_less"] * hh_income_less_than_2000
+                + dict_betas["b_hh_income_8000_or_less"] * hh_income_2000_to_4000
+                + dict_betas["b_hh_income_8000_or_less"] * hh_income_4001_to_6000
+                + dict_betas["b_hh_income_8000_or_less"] * hh_income_6001_to_8000
+                + models.piecewise_formula(
+                    number_of_children_not_NA, [None, 1.1, 2.1, 3.1, None]
+                )  # linearised from rumboost
+                + dict_betas["b_single_household"] * single_household
+                + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax
+                + models.piecewiseFormula(
+                    home_work_distance_car, [None, 0.004, 0.07, 0.255, 0.265, None]
+                )  # linearised from rumboost
+                + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA
+                # + dict_betas["b_is_agriculture_1_15"] * business_sector_agriculture_15
+                # + dict_betas["b_is_production_1520"] * business_sector_production_1520
+                # + dict_betas["b_is_wohlesale_1520"] * business_sector_wholesale_1520
+                # + dict_betas["b_is_falc_id_6to9_1520"] * is_falc_id_6to9_1520
+                + dict_betas["b_falc_id_NA"] * falc_id_NA
+                # + dict_betas["beta_accsib_home_not_NA_5_10_1520"]
+                # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 5.0), 5.0))
+                # + dict_betas["beta_accsib_home_not_NA_10_24_1520"]
+                # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 10.0), 14.0))
+                # + dict_betas["beta_work_percentage_0_95_20"]
+                # * bioMax(0.0, bioMin((work_percentage_20 - 0.0), 95.0))
+                # + dict_betas["beta_work_percentage_95_101_20_21"]
+                # * bioMax(0.0, bioMin((work_percentage_20_21 - 95.0), 6.0))
+                + models.piecewiseFormula(
+                    age_21, [None, 16, 32, 53, None]
+                )  # linearised from rumboost
+                + models.piecewiseFormula(work_percentage_21, [None, 55, 75, None])
+                + dict_betas["b_executives_21"] * executives_21
+                + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21
+                + dict_betas["b_is_production_1_21"] * business_sector_production_21
+                + dict_betas["b_is_wohlesale_1_21"] * business_sector_wholesale_21
+                + dict_betas["b_is_falc_id_6to9_1_21"] * is_falc_id_6to9_21
+                + models.piecewiseFormula(
+                    accsib_home_not_NA_21, [None, 0.9, 3.3, 6, None]
+                )  # linearised from rumboos
+                + dict_betas["b_identified_as_male"] * identified_as_male
+                + dict_betas["b_nb_of_cars_NA"] * nb_of_cars_NA
+                #+ dict_betas["b_car_avail_NA"] * car_avail_NA #removed because corellated with b_has_driving_licence_not_NA
+                + dict_betas["b_car_avail_not_NA_always"] * car_avail_not_NA_always
+                + dict_betas["b_car_avail_not_NA_on_demand"] * car_avail_not_NA_on_demand
+                + dict_betas["b_has_driving_licence_NA"] * has_driving_licence_NA
+                + dict_betas["b_has_driving_licence_not_NA"] * has_driving_licence_not_NA
+                + dict_betas["b_work_time_flexibility_NA"] * work_time_flexibility_NA
+                + dict_betas["b_work_time_flexibility_not_NA_fixed"] * work_time_flexibility_not_NA_fixed
+                #+ dict_betas["b_work_parking_NA"] * work_parking_NA # removed because corellated with b_work_time_flexibility_NA
+                + dict_betas["b_work_parking_not_NA_free"] * work_parking_not_NA_free
+                + dict_betas["b_is_swiss"] * is_swiss
+                # + dict_betas["b_typology_work_NA"] * typology_work_NA #removed because corellated with b_car_work_distance_NA
+                + dict_betas["b_typology_work_not_NA_urban"] * typology_work_not_NA_urban
+                + dict_betas["b_typology_work_not_NA_rural"] * typology_work_not_NA_rural
+                + dict_betas["b_typology_home_urban"] * typology_home_urban
+                + dict_betas["b_typology_home_rural"] * typology_home_rural
+                + models.piecewiseFormula(
+                    hh_size, [None, 6.5, None]
+                )
+                + dict_betas["b_nb_of_cars_not_NA"] * nb_of_cars_not_NA
+            )
+                if linearised
+                else (
                 dict_betas["alternative_specific_constant"]
                 # + models.piecewiseFormula(age_1520, [18, 35])
                 # + models.piecewiseFormula(work_percentage_15, [0, 95, 101])
@@ -546,22 +619,23 @@ def return_model(df_zp, intensity_cutoff, df_zp_test=None, linearised=False):
                 + dict_betas["b_identified_as_male"] * identified_as_male
                 + dict_betas["b_nb_of_cars_NA"] * nb_of_cars_NA
                 + dict_betas["b_nb_of_cars_not_NA"] * nb_of_cars_not_NA
-                + dict_betas["b_car_avail_NA"] * car_avail_NA
+                # + dict_betas["b_car_avail_NA"] * car_avail_NA
                 + dict_betas["b_car_avail_not_NA_always"] * car_avail_not_NA_always
                 + dict_betas["b_car_avail_not_NA_on_demand"] * car_avail_not_NA_on_demand
                 + dict_betas["b_has_driving_licence_NA"] * has_driving_licence_NA
                 + dict_betas["b_has_driving_licence_not_NA"] * has_driving_licence_not_NA
                 + dict_betas["b_work_time_flexibility_NA"] * work_time_flexibility_NA
                 + dict_betas["b_work_time_flexibility_not_NA_fixed"] * work_time_flexibility_not_NA_fixed
-                + dict_betas["b_work_parking_NA"] * work_parking_NA
+                # + dict_betas["b_work_parking_NA"] * work_parking_NA
                 + dict_betas["b_work_parking_not_NA_free"] * work_parking_not_NA_free
                 + dict_betas["b_is_swiss"] * is_swiss
-                + dict_betas["b_typology_work_NA"] * typology_work_NA
+                # + dict_betas["b_typology_work_NA"] * typology_work_NA
                 + dict_betas["b_typology_work_not_NA_urban"] * typology_work_not_NA_urban
                 + dict_betas["b_typology_work_not_NA_rural"] * typology_work_not_NA_rural
                 + dict_betas["b_typology_home_urban"] * typology_home_urban
                 + dict_betas["b_typology_home_rural"] * typology_home_rural
             )
+        )
     U_no_telecommuting = 0
 
     # Thresholds if ordinal logit

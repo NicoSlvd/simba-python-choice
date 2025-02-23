@@ -664,7 +664,7 @@ def plot_parameters(
                     )
                 elif save_file:
                     plt.savefig(
-                        f"{save_file}_{utility_names[u]}_{f}.png", facecolor="white"
+                        f"{save_file}_{f}.png", facecolor="white"
                     )
                 if no_output:
                     pass

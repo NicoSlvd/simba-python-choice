@@ -149,17 +149,17 @@ def run_estimation(
         + dict_betas["b_identified_as_male"] * identified_as_male
         + dict_betas["b_nb_of_cars_NA"] * nb_of_cars_NA
         + dict_betas["b_nb_of_cars_not_NA"] * nb_of_cars_not_NA
-        + dict_betas["b_car_avail_NA"] * car_avail_NA
+        #+ dict_betas["b_car_avail_NA"] * car_avail_NA #removed because corellated with b_has_driving_licence_not_NA
         + dict_betas["b_car_avail_not_NA_always"] * car_avail_not_NA_always
         + dict_betas["b_car_avail_not_NA_on_demand"] * car_avail_not_NA_on_demand
         + dict_betas["b_has_driving_licence_NA"] * has_driving_licence_NA
         + dict_betas["b_has_driving_licence_not_NA"] * has_driving_licence_not_NA
         + dict_betas["b_work_time_flexibility_NA"] * work_time_flexibility_NA
         + dict_betas["b_work_time_flexibility_not_NA_fixed"] * work_time_flexibility_not_NA_fixed
-        + dict_betas["b_work_parking_NA"] * work_parking_NA
+        #+ dict_betas["b_work_parking_NA"] * work_parking_NA # removed because corellated with b_work_time_flexibility_NA
         + dict_betas["b_work_parking_not_NA_free"] * work_parking_not_NA_free
         + dict_betas["b_is_swiss"] * is_swiss
-        + dict_betas["b_typology_work_NA"] * typology_work_NA
+        # + dict_betas["b_typology_work_NA"] * typology_work_NA #removed because corellated with b_car_work_distance_NA
         + dict_betas["b_typology_work_not_NA_urban"] * typology_work_not_NA_urban
         + dict_betas["b_typology_work_not_NA_rural"] * typology_work_not_NA_rural
         + dict_betas["b_typology_home_urban"] * typology_home_urban

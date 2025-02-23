@@ -88,8 +88,9 @@ def run_home_office_in_microcensus(
 
 if __name__ == "__main__":
     # models = ["dcm", "rumboost"]
-    models = ["rumboost"]
-    # models = ["linearised_model"]
+    models = ["linearised_model"]
+    # models = ["rumboost"]
+    # models = ["dcm", "rumboost", "linearised_model"]
     # intensity_cutoffs = [20, 10, 0]
     intensity_cutoffs = [20]
 
@@ -110,13 +111,13 @@ if __name__ == "__main__":
                     path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
                         "output"
                     ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
-                    path = path / f"rumboost_metrics_wfh_intensity{cutoff}_seed{seed}_.csv" if cutoff else path / f"rumboost_metrics_wfh_possibility_seed{seed}_.csv"
+                    path = path / f"lm_metrics_wfh_intensity{cutoff}_seed{seed}_.csv" if cutoff else path / f"lm_metrics_wfh_possibility_seed{seed}_.csv"
 
-                if path.exists():
-                    print(f"File already exists, skipping {model} with intensity_cutoff={cutoff}, seed={seed}")
-                    continue
-                else:
-                    print(f"Running main.py with model={model} and intensity_cutoff={cutoff}, seed={seed}")
+                # if path.exists():
+                #     print(f"File already exists, skipping {model} with intensity_cutoff={cutoff}, seed={seed}")
+                #     continue
+                # else:
+                print(f"Running main.py with model={model} and intensity_cutoff={cutoff}, seed={seed}")
                 # subprocess.run(["python", MAIN_FILE, "--model", model, "--intensity_cutoff", str(cutoff)])
                 argparser = ArgumentParser()
                 argparser.add_argument(

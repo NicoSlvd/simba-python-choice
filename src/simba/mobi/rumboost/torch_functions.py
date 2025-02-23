@@ -1126,15 +1126,13 @@ def _f_obj_proportional_odds_torch(
     raw_preds,
     thresholds,
 ):
-    raise NotImplementedError(
-        "The proportional odds loss is not yet implemented for torch tensors."
-    )
     if not torch_installed:
         raise ImportError(
             "Pytorch is not installed. Please install it to run rumboost on torch tensors."
         )
 
     thresholds = torch.tensor(thresholds).to(raw_preds.device)
+    thresholds = torch.cat((thresholds, torch.tensor([np.inf], device=raw_preds.device)))
     labels = labels.view(-1).int()
 
     grad = torch.where(
@@ -1143,8 +1141,8 @@ def _f_obj_proportional_odds_torch(
         torch.where(
             labels == thresholds.shape[0],
             preds[:, -1] - 1,
-            torch.sigmoid(raw_preds - thresholds[None, labels - 1])
-            + torch.sigmoid(raw_preds - thresholds[None, labels])
+            torch.sigmoid(raw_preds - thresholds[labels - 1])
+            + torch.sigmoid(raw_preds - thresholds[labels])
             - 1,
         ),
     )
@@ -1155,10 +1153,10 @@ def _f_obj_proportional_odds_torch(
         torch.where(
             labels == thresholds.shape[0],
             preds[:, -1] * (1 - preds[:, -1]),
-            torch.sigmoid(raw_preds - thresholds[None, labels - 1])
-            * (1 - torch.sigmoid(raw_preds - thresholds[None, labels - 1]))
-            + torch.sigmoid(raw_preds - thresholds[None, labels])
-            * (1 - torch.sigmoid(raw_preds - thresholds[None, labels])),
+            torch.sigmoid(raw_preds - thresholds[labels - 1])
+            * (1 - torch.sigmoid(raw_preds - thresholds[labels - 1]))
+            + torch.sigmoid(raw_preds - thresholds[labels])
+            * (1 - torch.sigmoid(raw_preds - thresholds[labels])),
         ),
     )
 

@@ -72,7 +72,7 @@ def run_estimation(
         + dict_betas["b_single_household"] * single_household
         + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax
         + models.piecewiseFormula(
-            home_work_distance_car_short, [0.0001, 0.005, 0.19]
+            home_work_distance_car_short, [None, 0.0001, 0.005, 0.19, None]
         )  # linearised from rumboost
         + dict_betas["b_home_work_distance_car_long"] * home_work_distance_car_long
         + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA
@@ -90,17 +90,88 @@ def run_estimation(
         # + dict_betas["beta_work_percentage_95_101_20_21"]
         # * bioMax(0.0, bioMin((work_percentage_20_21 - 95.0), 6.0))
         + models.piecewiseFormula(
-            age_21, [17, 21, 35, 61, 83]
+            age_21, [None, 17, 21, 35, 61, 83, None]
         )  # linearised from rumboost
-        + models.piecewiseFormula(work_percentage_21, [3.5, 4.5, 28, 31, 39, 84])
+        + models.piecewiseFormula(work_percentage_21, [None, 3.5, 4.5, 28, 31, 39, 84, None])
         + dict_betas["b_executives_21"] * executives_21
         + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21
         + dict_betas["b_is_production_1_21"] * business_sector_production_21
         + dict_betas["b_is_wohlesale_1_21"] * business_sector_wholesale_21
         + dict_betas["b_is_falc_id_6to9_1_21"] * is_falc_id_6to9_21
         + models.piecewiseFormula(
-            accsib_home_not_NA_21, [0.2, 0.45, 0.6, 1.4, 9.1, 15, 95, 16.05]
+            accsib_home_not_NA_21, [None, 0.2, 0.45, 0.6, 1.4, 9.1, 15, 95, 16.05, None]
         )  # linearised from rumboost
+        if not intensity_cutoff
+        else
+        dict_betas["alternative_specific_constant"]
+        # + models.piecewiseFormula(age_1520, [18, 35])
+        # + models.piecewiseFormula(work_percentage_15, [0, 95, 101])
+        # + dict_betas["b_executives_1520"] * executives_1520
+        + dict_betas["b_german_speaking"] * german_speaking
+        + dict_betas["b_no_post_school_education"] * no_post_school_educ
+        + dict_betas["b_secondary_education"] * secondary_education
+        + dict_betas["b_tertiary_education"] * tertiary_education
+        # + dict_betas["b_rural_work_1520"] * rural_work_1520
+        + dict_betas["b_hh_income_na"] * hh_income_na
+        + dict_betas["b_hh_income_8000_or_less"] * hh_income_less_than_2000
+        + dict_betas["b_hh_income_8000_or_less"] * hh_income_2000_to_4000
+        + dict_betas["b_hh_income_8000_or_less"] * hh_income_4001_to_6000
+        + dict_betas["b_hh_income_8000_or_less"] * hh_income_6001_to_8000
+        + models.piecewise_formula(
+            number_of_children_not_NA, [None, 1.1, 2.1, 3.1, None]
+        )  # linearised from rumboost
+        + dict_betas["b_single_household"] * single_household
+        + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax
+        + models.piecewiseFormula(
+            home_work_distance_car, [None, 0.004, 0.07, 0.255, 0.265, None]
+        )  # linearised from rumboost
+        + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA
+        # + dict_betas["b_is_agriculture_1_15"] * business_sector_agriculture_15
+        # + dict_betas["b_is_production_1520"] * business_sector_production_1520
+        # + dict_betas["b_is_wohlesale_1520"] * business_sector_wholesale_1520
+        # + dict_betas["b_is_falc_id_6to9_1520"] * is_falc_id_6to9_1520
+        + dict_betas["b_falc_id_NA"] * falc_id_NA
+        # + dict_betas["beta_accsib_home_not_NA_5_10_1520"]
+        # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 5.0), 5.0))
+        # + dict_betas["beta_accsib_home_not_NA_10_24_1520"]
+        # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 10.0), 14.0))
+        # + dict_betas["beta_work_percentage_0_95_20"]
+        # * bioMax(0.0, bioMin((work_percentage_20 - 0.0), 95.0))
+        # + dict_betas["beta_work_percentage_95_101_20_21"]
+        # * bioMax(0.0, bioMin((work_percentage_20_21 - 95.0), 6.0))
+        + models.piecewiseFormula(
+            age_21, [None, 16, 32, 53, None]
+        )  # linearised from rumboost
+        + models.piecewiseFormula(work_percentage_21, [None, 55, 75, None])
+        + dict_betas["b_executives_21"] * executives_21
+        + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21
+        + dict_betas["b_is_production_1_21"] * business_sector_production_21
+        + dict_betas["b_is_wohlesale_1_21"] * business_sector_wholesale_21
+        + dict_betas["b_is_falc_id_6to9_1_21"] * is_falc_id_6to9_21
+        + models.piecewiseFormula(
+            accsib_home_not_NA_21, [None, 0.9, 3.3, 6, None]
+        )  # linearised from rumboos
+        + dict_betas["b_identified_as_male"] * identified_as_male
+        + dict_betas["b_nb_of_cars_NA"] * nb_of_cars_NA
+        #+ dict_betas["b_car_avail_NA"] * car_avail_NA #removed because corellated with b_has_driving_licence_not_NA
+        + dict_betas["b_car_avail_not_NA_always"] * car_avail_not_NA_always
+        + dict_betas["b_car_avail_not_NA_on_demand"] * car_avail_not_NA_on_demand
+        + dict_betas["b_has_driving_licence_NA"] * has_driving_licence_NA
+        + dict_betas["b_has_driving_licence_not_NA"] * has_driving_licence_not_NA
+        + dict_betas["b_work_time_flexibility_NA"] * work_time_flexibility_NA
+        + dict_betas["b_work_time_flexibility_not_NA_fixed"] * work_time_flexibility_not_NA_fixed
+        #+ dict_betas["b_work_parking_NA"] * work_parking_NA # removed because corellated with b_work_time_flexibility_NA
+        + dict_betas["b_work_parking_not_NA_free"] * work_parking_not_NA_free
+        + dict_betas["b_is_swiss"] * is_swiss
+        # + dict_betas["b_typology_work_NA"] * typology_work_NA #removed because corellated with b_car_work_distance_NA
+        + dict_betas["b_typology_work_not_NA_urban"] * typology_work_not_NA_urban
+        + dict_betas["b_typology_work_not_NA_rural"] * typology_work_not_NA_rural
+        + dict_betas["b_typology_home_urban"] * typology_home_urban
+        + dict_betas["b_typology_home_rural"] * typology_home_rural
+        + models.piecewiseFormula(
+            hh_size, [None, 6.5, None]
+        )
+        + dict_betas["b_nb_of_cars_not_NA"] * nb_of_cars_not_NA
     )
     U_no_telecommuting = 0
 
@@ -129,7 +200,7 @@ def run_estimation(
     # Definition of the model. This is the contribution of each observation to the log likelihood function.
     # Choice variable: "telecommuting"
     if intensity_cutoff:
-        model_name = f"wfh_intensity{intensity_cutoff}_model_linearised_sbb_seed{seed}"
+        model_name = f"wfh_intensity{intensity_cutoff}_model_linearised_sbb_seed0"
 
         the_proba = models.ordered_logit(
             continuous_value=V,
