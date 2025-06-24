@@ -29,15 +29,16 @@ def train_rumboost_telecommuting(
     df_zp_test=None,
     year: int = None,
     seed: int = None,
+    lin_rumboost: bool = False,
 ):
     year_name = f"{year}" if year else "2015_2020_2021"
     output_directory = output_directory / f"models/estimation/{year_name}/"
     output_directory.mkdir(parents=True, exist_ok=True)
-    train_rumb(df_zp, output_directory, df_zp_test, intensity_cutoff, seed)
+    train_rumb(df_zp, output_directory, df_zp_test, intensity_cutoff, seed, lin_rumboost)
 
 
 def train_rumb(
-    df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=None, seed=None
+    df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=None, seed=None, lin_rumboost=False
 ):
 
     if TORCH_INSTALLED:
@@ -48,12 +49,12 @@ def train_rumb(
     print("Training RUMBoost model for predicting telecommuting " + choice_situation)
 
     choice = "telecommuting_intensity" if intensity_cutoff else "telecommuting"
-    new_df_train = define_variables(df_zp_train, choice)
+    new_df_train = define_variables(df_zp_train, choice, remove_corr_vars=True)
     new_df_test = (
-        define_variables(df_zp_test, choice) if df_zp_test is not None else None
+        define_variables(df_zp_test, choice, remove_corr_vars=True) if df_zp_test is not None else None
     )
 
-    model_specification = get_rumboost_model_spec(new_df_train, intensity_cutoff)
+    model_specification = get_rumboost_model_spec(new_df_train, intensity_cutoff, lin_rumboost)
 
     features = new_df_train.columns.tolist()
 
@@ -144,7 +145,7 @@ def train_rumb(
         torch_run = False
 
     str_model = (
-        f"intensity{intensity_cutoff}_all_vars_seed{seed}"
+        f"intensity{intensity_cutoff}_tt_seed{seed}"
         if intensity_cutoff
         else f"possibility_seed{seed}"
     )

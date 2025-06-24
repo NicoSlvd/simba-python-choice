@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import torch
 
 try:
     import matplotlib.pyplot as plt
@@ -14,6 +15,7 @@ from src.simba.mobi.rumboost.utility_smoothing import (
     mean_monotone_spline,
     data_leaf_value,
 )
+from src.simba.mobi.rumboost.linear_trees import LinearTree
 
 if not matplotlib_seaborn_installed:
     raise ImportError(
@@ -193,7 +195,6 @@ def plot_parameters(
     boost_from_parameter_space=None,
     group_feature=None,
     save_file="",
-    no_output=False,
 ):
     """
     Plot the non linear impact of parameters on the utility function.
@@ -234,9 +235,8 @@ def plot_parameters(
         Keys should be the feature name, and values should be the list of ensembles index in rum_structure.
     save_file : str, optional (default='')
         The name to save the figure with. The figure will be saved only if save_file is not an empty string.
-    no_output : bool, optional (default = False)
-        If True, do not plot the figures, only return the data.
     """
+
     weights_arranged = weights_to_plot_v2(model, num_iteration=num_iteration)
 
     if with_asc:
@@ -571,13 +571,31 @@ def plot_parameters(
             for i, f in enumerate(weights_arranged[u]):
 
                 # create nonlinear plot
-                if f in list(X.columns):
+                if boost_from_parameter_space and boost_from_parameter_space[u][f]:
+                    x_max = (
+                        1.05 * max(X[f])
+                        if f in list(X.columns)
+                        else (
+                            1.05 * xlabel_max[u]
+                            if xlabel_max
+                            else 1.05 * weights_arranged[u][f]["Splitting points"][-1]
+                        )
+                    )
+                    x = np.linspace(0, 1.05 * x_max, 10000)
+                    non_lin_func = model._linear_predict(int(u), x)
+                    if model.device is not None and not isinstance(non_lin_func, list):
+                        non_lin_func = non_lin_func.cpu().numpy()
+                elif f in list(X.columns):
                     x, non_lin_func = non_lin_function(
                         weights_arranged[u][f],
                         0,
                         1.05 * max(X[f]),
                         10000,
-                        boost_from_parameter_space[u][f] if boost_from_parameter_space else False,
+                        (
+                            boost_from_parameter_space[u][f]
+                            if boost_from_parameter_space
+                            else False
+                        ),
                     )
                 elif xlabel_max:
                     x, non_lin_func = non_lin_function(
@@ -585,7 +603,11 @@ def plot_parameters(
                         0,
                         1.05 * xlabel_max[u],
                         10000,
-                        boost_from_parameter_space[u][f] if boost_from_parameter_space else False,
+                        (
+                            boost_from_parameter_space[u][f]
+                            if boost_from_parameter_space
+                            else False
+                        ),
                     )
                 else:
                     x, non_lin_func = non_lin_function(
@@ -593,21 +615,21 @@ def plot_parameters(
                         0,
                         1.05 * weights_arranged[u][f]["Splitting points"][-1],
                         10000,
-                        boost_from_parameter_space[u][f] if boost_from_parameter_space else False,
+                        (
+                            boost_from_parameter_space[u][f]
+                            if boost_from_parameter_space
+                            else False
+                        ),
                     )
 
-                if asc_normalised and (not boost_from_parameter_space or not boost_from_parameter_space[u][f]):
+                if asc_normalised:
                     val_0 = non_lin_func[0]
                     non_lin_func = [n - val_0 for n in non_lin_func]
-                elif boost_from_parameter_space[u][f]:
-                    val_0 = (
-                        model.asc[int(u)]
-                    )
-                    if model.device == "cuda":
-                        val_0 = val_0.cpu().detach().numpy()
-                    non_lin_func = [n + val_0 for n in non_lin_func]
 
-                if with_asc and (not boost_from_parameter_space or not boost_from_parameter_space[u][f]):
+                if with_asc and (
+                    not boost_from_parameter_space
+                    or not boost_from_parameter_space[u][f]
+                ):
                     non_lin_func = [n + ASCs[int(u)] for n in non_lin_func]
 
                 # plot parameters
@@ -666,17 +688,15 @@ def plot_parameters(
                     plt.savefig(
                         f"{save_file}_{f}.png", facecolor="white"
                     )
-                if no_output:
-                    pass
-                else:
-                    plt.show()
+
+                plt.show()
 
     if group_feature:
         for f, indices in group_feature.items():
             x_tot = np.linspace(0, 1.05 * max(X[f]), 10000)
             non_lin_func_tot = [0] * 10000
             for i in indices:
-                if str(i) not in weights_arranged:
+                if str(i) not in weights_arranged or f not in weights_arranged[str(i)]:
                     continue
                 if f in list(X.columns):
                     x, non_lin_func = non_lin_function(
@@ -707,10 +727,7 @@ def plot_parameters(
                     val_0 = non_lin_func[0]
                     non_lin_func = [n - val_0 for n in non_lin_func]
                 elif boost_from_parameter_space[str(i)][f]:
-                    val_0 = (
-                        model.asc[i]
-                        * model.utility_length[model.rum_structure[i]["utility"][0]]
-                    )
+                    val_0 = 0
                     non_lin_func = [n + val_0 for n in non_lin_func]
 
                 non_lin_func_tot = [
@@ -747,7 +764,7 @@ def plot_parameters(
             else:
                 plt.xlim(
                     [
-                        0 - 0.05 * weights_arranged[str(i)][f]["Splitting points"][0],
+                        0 - 0.05 * weights_arranged[str(i)][f]["Splitting points"][-1],
                         weights_arranged[str(i)][f]["Splitting points"][-1] * 1.05,
                     ]
                 )
@@ -771,8 +788,6 @@ def plot_parameters(
                 )
 
             plt.show()
-    
-    plt.close("all")
 
 
 def plot_market_segm(
@@ -1919,6 +1934,53 @@ def create_name(features):
     return new_name
 
 
+def lintree_to_weights(split_and_leaf_values: dict, feature: str, utility: int):
+    """
+    Convert a split and leaf values dictionary from a linear tree to a list of weights.
+    The split_and_leaf_values dictionary should contain the keys "splits" and "leaves",
+    where "splits" is a list of split points and "leaves" is a list of leaf values.
+
+    Parameters
+    ----------
+    split_and_leaf_values : dict
+        A dictionary containing the split points and leaf values.
+        It should have the keys "splits" and "leaves".
+    feature : str
+        The name of the feature for which the weights are being calculated.
+    utility : int
+        The utility index for which the weights are being calculated.
+    
+    Returns
+    -------
+    lin_weights : list
+        A list of lists, where each inner list contains the feature name, split point,
+        left leaf value, right leaf value, and utility index.
+    """
+
+    lin_weights = []
+
+    splits = np.array(split_and_leaf_values["splits"])
+    leaves = np.array(split_and_leaf_values["leaves"])
+
+    #find unique splits and leaves among all splits and leaves
+    leaf_change_idx = np.where(leaves[:-1] != leaves[1:])[0]
+    unique_splits = splits[leaf_change_idx + 1]
+    unique_leaves = np.concatenate([leaves[leaf_change_idx], leaves[-1].reshape(1)])
+
+    #rearrnage leaves to have them in same format than trees boosted from utility space
+    for i, u in enumerate(unique_leaves[:-1]):
+        if i == 0:
+            left_leaf = u
+            right_leaf = unique_leaves[i+1]
+        else:
+            left_leaf = 0
+            right_leaf = unique_leaves[i+1] - unique_leaves[i]
+
+        lin_weights.append([feature, unique_splits[i], left_leaf, right_leaf, utility])
+
+    return lin_weights
+
+
 def get_child(
     model,
     weights,
@@ -2194,7 +2256,6 @@ def get_weights(model, num_iteration=None):
         Dataframe with weights arranged for market segmentation, used in the case of market segmentation.
 
     """
-    # using self object or a given model
     model_json = model.dump_model(num_iteration=num_iteration)
 
     weights = []
@@ -2202,28 +2263,35 @@ def get_weights(model, num_iteration=None):
     weights_market = []
 
     for i, b in enumerate(model_json):
-        feature_names = b["feature_names"]
-        for trees in b["tree_info"]:
-            features = []
-            split_points = []
-            market_segm = False
+        #trees booster from parameter space
+        if "split_and_leaf_values" in b:
+            feature = model.rum_structure[i]["variables"][0]
+            lin_weights = lintree_to_weights(b["split_and_leaf_values"], feature, i)
+            weights.extend(lin_weights)
+        else: 
+            #trees boosted from utility space
+            feature_names = b["feature_names"]
+            for trees in b["tree_info"]:
+                features = []
+                split_points = []
+                market_segm = False
 
-            # skipping empty trees
-            if "split_feature" not in trees["tree_structure"]:
-                continue
+                # skipping empty trees
+                if "split_feature" not in trees["tree_structure"]:
+                    continue
 
-            get_child(
-                model,
-                weights,
-                weights_2d,
-                weights_market,
-                trees["tree_structure"],
-                split_points,
-                features,
-                feature_names,
-                i,
-                market_segm,
-            )
+                get_child(
+                    model,
+                    weights,
+                    weights_2d,
+                    weights_market,
+                    trees["tree_structure"],
+                    split_points,
+                    features,
+                    feature_names,
+                    i,
+                    market_segm,
+                )
 
     weights_df = pd.DataFrame(
         weights,
@@ -2335,11 +2403,7 @@ def weights_to_plot_v2(model, market_segm=False, num_iteration=None):
 
             weights_for_plot[str(i)][f] = {
                 "Splitting points": split_points,
-                "Histogram values": list(
-                    model._monotonise_with_softplus(
-                        np.array(function_value), i, force_cpu=True
-                    )
-                ),
+                "Histogram values": function_value,
             }
 
     return weights_for_plot
@@ -2395,7 +2459,7 @@ def non_lin_function(
                     start_point
                     + float(weights_ordered["Histogram values"][i]) * (x - x_pad)
                 ]  # a + bx
-            elif x < float(
+            elif x <= float(
                 weights_ordered["Splitting points"][i]
             ):  # up to last interval
                 nonlin_function += [

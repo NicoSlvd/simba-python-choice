@@ -105,7 +105,7 @@ def run_estimation(
         # + models.piecewiseFormula(work_percentage_15, [0, 95, 101])
         # + dict_betas["b_executives_1520"] * executives_1520
         + dict_betas["b_german_speaking"] * german_speaking
-        + dict_betas["b_no_post_school_education"] * no_post_school_educ
+        # + dict_betas["b_no_post_school_education"] * no_post_school_educ #P-value > 0.8
         + dict_betas["b_secondary_education"] * secondary_education
         + dict_betas["b_tertiary_education"] * tertiary_education
         # + dict_betas["b_rural_work_1520"] * rural_work_1520
@@ -115,11 +115,11 @@ def run_estimation(
         + dict_betas["b_hh_income_8000_or_less"] * hh_income_4001_to_6000
         + dict_betas["b_hh_income_8000_or_less"] * hh_income_6001_to_8000
         + dict_betas["b_number_of_children"] * number_of_children_not_NA
-        + dict_betas["b_number_of_children_NA"] * number_of_children_NA
+        # + dict_betas["b_number_of_children_NA"] * number_of_children_NA #P-value > 0.8
         + dict_betas["b_single_household"] * single_household
-        + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax
-        + models.piecewiseFormula(home_work_distance_car, [0, 0.15])
-        + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA
+        # + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax #P-value > 0.2
+        # + models.piecewiseFormula(home_work_distance_car, [0, 0.15]) # correlated with travel times
+        # + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA #correlated with travel times NA
         # + dict_betas["b_is_agriculture_1_15"] * business_sector_agriculture_15
         # + dict_betas["b_is_production_1520"] * business_sector_production_1520
         # + dict_betas["b_is_wohlesale_1520"] * business_sector_wholesale_1520
@@ -137,7 +137,7 @@ def run_estimation(
         + dict_betas["beta_work_percentage_0_95_21"]
         * bioMax(0.0, bioMin((work_percentage_21 - 0.0), 95.0))
         + dict_betas["b_executives_21"] * executives_21
-        + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21
+        # + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21 #values are all 0
         + dict_betas["b_is_production_1_21"] * business_sector_production_21
         + dict_betas["b_is_wohlesale_1_21"] * business_sector_wholesale_21
         + dict_betas["b_is_falc_id_6to9_1_21"] * is_falc_id_6to9_21
@@ -145,26 +145,34 @@ def run_estimation(
         * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 5.0), 5.0))
         + dict_betas["beta_accsib_home_not_NA_10_24_21"]
         * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 10.0), 14.0))
-        + dict_betas["b_hh_size"] * hh_size
-        + dict_betas["b_identified_as_male"] * identified_as_male
-        + dict_betas["b_nb_of_cars_NA"] * nb_of_cars_NA
+        # + dict_betas["b_hh_size"] * hh_size # removed because corellated with number of children
+        # + dict_betas["b_identified_as_male"] * identified_as_male # removed because not used in SBB models
+        # + dict_betas["b_nb_of_cars_NA"] * nb_of_cars_NA #P-value > 0.2
         + dict_betas["b_nb_of_cars_not_NA"] * nb_of_cars_not_NA
-        #+ dict_betas["b_car_avail_NA"] * car_avail_NA #removed because corellated with b_has_driving_licence_not_NA
+        # + dict_betas["b_car_avail_NA"] * car_avail_NA
         + dict_betas["b_car_avail_not_NA_always"] * car_avail_not_NA_always
         + dict_betas["b_car_avail_not_NA_on_demand"] * car_avail_not_NA_on_demand
-        + dict_betas["b_has_driving_licence_NA"] * has_driving_licence_NA
-        + dict_betas["b_has_driving_licence_not_NA"] * has_driving_licence_not_NA
+        # + dict_betas["b_has_driving_licence_NA"] * has_driving_licence_NA #P-value > 0.2
+        # + dict_betas["b_has_driving_licence_not_NA"] * has_driving_licence_not_NA #P-value > 0.8
         + dict_betas["b_work_time_flexibility_NA"] * work_time_flexibility_NA
         + dict_betas["b_work_time_flexibility_not_NA_fixed"] * work_time_flexibility_not_NA_fixed
-        #+ dict_betas["b_work_parking_NA"] * work_parking_NA # removed because corellated with b_work_time_flexibility_NA
+        # + dict_betas["b_work_parking_NA"] * work_parking_NA
         + dict_betas["b_work_parking_not_NA_free"] * work_parking_not_NA_free
         + dict_betas["b_is_swiss"] * is_swiss
-        # + dict_betas["b_typology_work_NA"] * typology_work_NA #removed because corellated with b_car_work_distance_NA
+        # + dict_betas["b_typology_work_NA"] * typology_work_NA
         + dict_betas["b_typology_work_not_NA_urban"] * typology_work_not_NA_urban
-        + dict_betas["b_typology_work_not_NA_rural"] * typology_work_not_NA_rural
-        + dict_betas["b_typology_home_urban"] * typology_home_urban
-        + dict_betas["b_typology_home_rural"] * typology_home_rural
-            
+        # + dict_betas["b_typology_work_not_NA_rural"] * typology_work_not_NA_rural #removed because corellated with urban typology
+        # + dict_betas["b_typology_home_urban"] * typology_home_urban #P-value > 0.8
+        # + dict_betas["b_typology_home_rural"] * typology_home_rural  #removed because corellated with urban typology
+        + dict_betas["b_pt_travel_times_not_NA"] * pt_travel_times_not_NA
+        # + dict_betas["b_pt_travel_times_NA"] * pt_travel_times_NA # grouped because corellated with other tt NA variables
+        # + dict_betas["b_pt_access_times_not_NA"] * pt_access_times_not_NA #P-value > 0.2
+        # + dict_betas["b_pt_access_times_NA"] * pt_access_times_NA # grouped because corellated with other tt NA variables
+        + dict_betas["b_pt_egress_times_not_NA"] * pt_egress_times_not_NA
+        # + dict_betas["b_pt_egress_times_NA"] * pt_egress_times_NA # grouped because corellated with other tt NA variables
+        # + dict_betas["b_n_transfers_not_NA"] * n_transfers_not_NA #P-value > 0.2
+        # + dict_betas["b_n_transfers_NA"] * n_transfers_NA # grouped because corellated with other tt NA variables
+        + dict_betas["b_pt_tt_or_transfers_NA"] * pt_tt_or_transfers_NA
     )
     U_no_telecommuting = 0
 
@@ -193,7 +201,7 @@ def run_estimation(
     # Definition of the model. This is the contribution of each observation to the log likelihood function.
     # Choice variable: "telecommuting"
     if intensity_cutoff:
-        model_name = f"wfh_intensity{intensity_cutoff}_model_sbb_all_vars_seed{seed}"
+        model_name = f"wfh_intensity{intensity_cutoff}_model_sbb_all_vars_and_tt_seed{seed}"
 
         the_proba = models.ordered_logit(
             continuous_value=V,
@@ -221,7 +229,7 @@ def run_estimation(
 
     df_parameters = results.getEstimatedParameters()
     str_model = (
-        f"intensity{intensity_cutoff}_all_vars_seed{seed}"
+        f"intensity{intensity_cutoff}_tt_seed{seed}"
         if intensity_cutoff
         else f"possibility_seed{seed}"
     )
@@ -249,7 +257,7 @@ def run_estimation(
         biogeme_obj = bio.BIOGEME(database, all_probs)
         biogeme_obj.generate_pickle = False
         biogeme_obj.generate_html = False
-        biogeme_obj.modelName = "wfh_intensity_model_all_vars_sbb_train"
+        biogeme_obj.modelName = "wfh_intensity_model_all_vars_and_tt_sbb_train"
 
         # Simulate probabilities for each class
         results_ = biogeme_obj.simulate(beta_values)
@@ -306,7 +314,7 @@ def run_estimation(
         biogeme_obj = bio.BIOGEME(database_test, all_probs)
         biogeme_obj.generate_pickle = False
         biogeme_obj.generate_html = False
-        biogeme_obj.modelName = "wfh_intensity_model_all_vars_sbb_test"
+        biogeme_obj.modelName = "wfh_intensity_model_all_vars_and_tt_sbb_test"
 
         # Simulate probabilities for each class
         results_ = biogeme_obj.simulate(beta_values)

@@ -265,6 +265,46 @@ def define_variables(database: pd.DataFrame) -> None:
         (urban_typology_home == 2) 
     )
 
+    pt_travel_times_not_NA = database.DefineVariable(
+        "pt_travel_times_not_NA",
+        (pt_travel_times / 3600.0) * (pt_travel_times >= 0.0)
+    )
+    pt_travel_times_NA = database.DefineVariable(
+        "pt_travel_times_NA",
+        pt_travel_times < 0.0
+    )
+    pt_access_times_not_NA = database.DefineVariable(
+        "pt_access_times_not_NA",
+        (pt_access_times / 3600.0) * (pt_access_times >= 0.0)
+    )
+    pt_access_times_NA = database.DefineVariable(
+        "pt_access_times_NA",
+        (pt_access_times < 0.0)
+    )
+    pt_egress_times_not_NA = database.DefineVariable(
+        "pt_egress_times_not_NA",
+        (pt_egress_times / 3600.0) * (pt_egress_times >= 0.0)
+    )
+    pt_egress_times_NA = database.DefineVariable(
+        "pt_egress_times_NA",
+        pt_egress_times < 0.0
+    )
+    n_transfers_not_NA = database.DefineVariable(
+        "n_transfers_not_NA",
+        n_transfers * (n_transfers >= 0.0)
+    )
+    n_transfers_NA = database.DefineVariable(
+        "n_transfers_NA",
+        n_transfers < 0.0
+    )
+    pt_tt_or_transfers_NA = database.DefineVariable(
+        "pt_tt_or_transfers_NA",
+        ((pt_travel_times < 0.0)
+        + (pt_access_times < 0.0)
+        + (pt_egress_times < 0.0)
+        + (n_transfers < 0.0)) > 0
+    )
+
 def get_dict_betas(intensity_cutoff: int = None) -> dict:
     # Parameters to be estimated (global)
     dict_betas = {
@@ -351,6 +391,15 @@ def get_dict_betas(intensity_cutoff: int = None) -> dict:
         "b_typology_work_not_NA_rural": Beta("b_typology_work_not_NA_rural", 0, None, None, 0),
         "b_typology_home_urban": Beta("b_typology_home_urban", 0, None, None, 0),
         "b_typology_home_rural": Beta("b_typology_home_rural", 0, None, None, 0),
+        "b_pt_travel_times_not_NA": Beta("b_pt_travel_times_not_NA", 0, None, None, 0),
+        "b_pt_travel_times_NA": Beta("b_pt_travel_times_NA", 0, None, None, 0),
+        "b_pt_access_times_not_NA": Beta("b_pt_access_times_not_NA", 0, None, None, 0),
+        "b_pt_access_times_NA": Beta("b_pt_access_times_NA", 0, None, None, 0),
+        "b_pt_egress_times_not_NA": Beta("b_pt_egress_times_not_NA", 0, None, None, 0),
+        "b_pt_egress_times_NA": Beta("b_pt_egress_times_NA", 0, None, None, 0),
+        "b_n_transfers_not_NA": Beta("b_n_transfers_not_NA", 0, None, None, 0),
+        "b_n_transfers_NA": Beta("b_n_transfers_NA", 0, None, None, 0),
+        "b_pt_tt_or_transfers_NA": Beta("b_pt_tt_or_transfers_NA", 0, None, None, 0),
     }
 
     # thresholds
@@ -539,7 +588,7 @@ def return_model(df_zp, intensity_cutoff, df_zp_test=None, linearised=False):
                 )  # linearised from rumboost
                 + models.piecewiseFormula(work_percentage_21, [None, 55, 75, None])
                 + dict_betas["b_executives_21"] * executives_21
-                + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21
+                # + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21 # values are all zero
                 + dict_betas["b_is_production_1_21"] * business_sector_production_21
                 + dict_betas["b_is_wohlesale_1_21"] * business_sector_wholesale_21
                 + dict_betas["b_is_falc_id_6to9_1_21"] * is_falc_id_6to9_21
@@ -566,7 +615,6 @@ def return_model(df_zp, intensity_cutoff, df_zp_test=None, linearised=False):
                 + models.piecewiseFormula(
                     hh_size, [None, 6.5, None]
                 )
-                + dict_betas["b_nb_of_cars_not_NA"] * nb_of_cars_not_NA
             )
                 if linearised
                 else (
@@ -588,8 +636,8 @@ def return_model(df_zp, intensity_cutoff, df_zp_test=None, linearised=False):
                 + dict_betas["b_number_of_children_NA"] * number_of_children_NA
                 + dict_betas["b_single_household"] * single_household
                 + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax
-                + models.piecewiseFormula(home_work_distance_car, [0, 0.15])
-                + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA
+                # + models.piecewiseFormula(home_work_distance_car, [0, 0.15])
+                # + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA
                 # + dict_betas["b_is_agriculture_1_15"] * business_sector_agriculture_15
                 # + dict_betas["b_is_production_1520"] * business_sector_production_1520
                 # + dict_betas["b_is_wohlesale_1520"] * business_sector_wholesale_1520
@@ -607,7 +655,7 @@ def return_model(df_zp, intensity_cutoff, df_zp_test=None, linearised=False):
                 + dict_betas["beta_work_percentage_0_95_21"]
                 * bioMax(0.0, bioMin((work_percentage_21 - 0.0), 95.0))
                 + dict_betas["b_executives_21"] * executives_21
-                + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21
+                # + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21 # values are all zero
                 + dict_betas["b_is_production_1_21"] * business_sector_production_21
                 + dict_betas["b_is_wohlesale_1_21"] * business_sector_wholesale_21
                 + dict_betas["b_is_falc_id_6to9_1_21"] * is_falc_id_6to9_21
@@ -615,8 +663,8 @@ def return_model(df_zp, intensity_cutoff, df_zp_test=None, linearised=False):
                 * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 5.0), 5.0))
                 + dict_betas["beta_accsib_home_not_NA_10_24_21"]
                 * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 10.0), 14.0))
-                + dict_betas["b_hh_size"] * hh_size
-                + dict_betas["b_identified_as_male"] * identified_as_male
+                # + dict_betas["b_hh_size"] * hh_size # removed because corellated with number of children
+                # + dict_betas["b_identified_as_male"] * identified_as_male # removed because not used in SBB models
                 + dict_betas["b_nb_of_cars_NA"] * nb_of_cars_NA
                 + dict_betas["b_nb_of_cars_not_NA"] * nb_of_cars_not_NA
                 # + dict_betas["b_car_avail_NA"] * car_avail_NA
@@ -631,9 +679,18 @@ def return_model(df_zp, intensity_cutoff, df_zp_test=None, linearised=False):
                 + dict_betas["b_is_swiss"] * is_swiss
                 # + dict_betas["b_typology_work_NA"] * typology_work_NA
                 + dict_betas["b_typology_work_not_NA_urban"] * typology_work_not_NA_urban
-                + dict_betas["b_typology_work_not_NA_rural"] * typology_work_not_NA_rural
+                # + dict_betas["b_typology_work_not_NA_rural"] * typology_work_not_NA_rural #removed because corellated with urban typology
                 + dict_betas["b_typology_home_urban"] * typology_home_urban
-                + dict_betas["b_typology_home_rural"] * typology_home_rural
+                # + dict_betas["b_typology_home_rural"] * typology_home_rural  #removed because corellated with urban typology
+                + dict_betas["b_pt_travel_times_not_NA"] * pt_travel_times_not_NA
+                # + dict_betas["b_pt_travel_times_NA"] * pt_travel_times_NA # grouped because corellated with other tt NA variables
+                + dict_betas["b_pt_access_times_not_NA"] * pt_access_times_not_NA
+                # + dict_betas["b_pt_access_times_NA"] * pt_access_times_NA # grouped because corellated with other tt NA variables
+                + dict_betas["b_pt_egress_times_not_NA"] * pt_egress_times_not_NA
+                # + dict_betas["b_pt_egress_times_NA"] * pt_egress_times_NA # grouped because corellated with other tt NA variables
+                + dict_betas["b_n_transfers_not_NA"] * n_transfers_not_NA
+                # + dict_betas["b_n_transfers_NA"] * n_transfers_NA # grouped because corellated with other tt NA variables
+                + dict_betas["b_pt_tt_or_transfers_NA"] * pt_tt_or_transfers_NA
             )
         )
     U_no_telecommuting = 0

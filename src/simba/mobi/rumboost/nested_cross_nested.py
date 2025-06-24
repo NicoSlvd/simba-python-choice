@@ -4,7 +4,7 @@ from src.simba.mobi.rumboost.metrics import cross_entropy
 
 try:
     import torch
-    from simba.mobi.rumboost.torch_functions import (
+    from src.simba.mobi.rumboost.torch_functions import (
         cross_entropy_torch,
         cross_entropy_torch_compiled,
         _nest_probs_torch,

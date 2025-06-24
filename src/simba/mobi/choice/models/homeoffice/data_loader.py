@@ -61,7 +61,7 @@ def get_data_per_year(year: int, intensity_cutoff: int = None) -> pd.DataFrame:
     # path_to_skim_file = (path_to_mobi_server / r"50_Ergebnisse/MOBi_3.2/plans/3.2_2017_10pct/")
     # CHANGED
     path_to_data = Path(
-        r"C:\Users\ucesnjs\OneDrive - University College London\Documents\PhD - UCL\choice_set_location_travelmode\Data"
+        os.path.join(os.getcwd(), "..", "..", "choice_set_location_travelmode", "Data")
     )
     path_to_npvm_zones = (
         path_to_data
@@ -326,6 +326,7 @@ def generate_data_file(
         df_zp["no_post_school_educ"] = np.where(
             (df_zp["highest_education"] == 1) | (df_zp["highest_education"] == 2), 1, 0
         )
+        #test
         df_zp["secondary_education"] = np.where(
             (df_zp["highest_education"] == 3)
             | (df_zp["highest_education"] == 4)
@@ -342,6 +343,9 @@ def generate_data_file(
 
     # Define a binary variable: studying or not
     df_zp = add_is_studying(df_zp)
+
+    # Add PT travel times, access times, and egress times
+    df_zp = add_pt_travel_times_and_transfers(df_zp, path_to_mobi_zones, path_to_skim_file)
 
     """ Add home-work distance from SIMBA MOBi """
     df_zp = add_home_work_distance(df_zp, path_to_mobi_zones, path_to_skim_file)
@@ -637,6 +641,74 @@ def add_home_work_distance(
 
     return df_zp
 
+#CHANGED
+def add_pt_travel_times_and_transfers(
+    df_zp: pd.DataFrame, path_to_mobi_zones: Path, path_to_skim_file: Path
+) -> pd.DataFrame:
+    df_zp_with_work_coord = df_zp[["HHNR", "zone_id_home", "zone_id_work"]]
+    df_zp_with_work_coord = df_zp_with_work_coord[
+        df_zp_with_work_coord.zone_id_work != -999
+    ]
+
+    # Open skim file
+    # skims = omx.open_file(path_to_skim_file / "pt_skims.omx", "r")
+    # CHANGED
+    skims = omx.open_file(Path(os.path.join(os.getcwd(), "..\pt_skims.omx")), "r")
+    # Load pt travel time
+    travel_times = np.array(skims["travel_times"])
+    access_times = np.array(skims["access_times"])
+    egress_times = np.array(skims["egress_times"])
+    n_transfers = np.array(skims["transfer_counts"])
+
+    """ Get MOBi traffic zones """
+    path_to_mobi_zones_shp = path_to_mobi_zones / "mobi-zones.shp"
+    # Important: zone_ids must be in ascending order
+    mobi_zones = geopandas.read_file(path_to_mobi_zones_shp).sort_values("zone_id")
+    mobi_zones.crs = "EPSG:2056"
+
+    """ Get matrix value for origin-destination pairs """
+    # We need a mapping "zone ID" to "position of the zone" to read the matrix value
+    zone_id_to_zone_index = dict(
+        zip(mobi_zones["zone_id"], range(len(mobi_zones["zone_id"])))
+    )
+    df_zp_with_work_coord["o_ind_temp"] = df_zp_with_work_coord["zone_id_home"].map(
+        zone_id_to_zone_index
+    )
+    df_zp_with_work_coord["d_ind_temp"] = df_zp_with_work_coord["zone_id_work"].map(
+        zone_id_to_zone_index
+    )
+    # Read matrix value
+    df_zp_with_work_coord["pt_travel_times"] = travel_times[
+        df_zp_with_work_coord["o_ind_temp"], df_zp_with_work_coord["d_ind_temp"]
+    ]
+    df_zp_with_work_coord["pt_access_times"] = access_times[
+        df_zp_with_work_coord["o_ind_temp"], df_zp_with_work_coord["d_ind_temp"]
+    ]
+    df_zp_with_work_coord["pt_egress_times"] = egress_times[
+        df_zp_with_work_coord["o_ind_temp"], df_zp_with_work_coord["d_ind_temp"]
+    ]
+    df_zp_with_work_coord["n_transfers"] = n_transfers[
+        df_zp_with_work_coord["o_ind_temp"], df_zp_with_work_coord["d_ind_temp"]
+    ]
+
+    skims.close()
+    df_zp_with_work_coord.drop(
+        ["zone_id_home", "zone_id_work", "o_ind_temp", "d_ind_temp"],
+        axis=1,
+        inplace=True,
+    )
+
+    """ Put data back in df_zp """
+    df_zp = pd.merge(df_zp, df_zp_with_work_coord, on="HHNR", how="left")
+
+    df_zp.fillna({"pt_travel_times": -999}, inplace=True)
+    df_zp.fillna({"pt_access_times": -999}, inplace=True)
+    df_zp.fillna({"pt_egress_times": -999}, inplace=True)
+    df_zp.fillna({"n_transfers": -999}, inplace=True)
+    df_zp.replace(np.inf, -999, inplace=True)
+
+    return df_zp
+
 
 def add_home_work_crow_fly_distance(df_zp: pd.DataFrame) -> pd.DataFrame:
     """Add the distance between home and work places"""
@@ -673,13 +745,15 @@ def add_spatial_typology(
     year: int,
 ) -> pd.DataFrame:
     """Add the data about the spatial typology of the home address (in particular the home commune)"""
-    df_zp = add_urban_typology(df_zp, year, field_bfs="W_BFS")
+    df_zp = add_urban_typology(df_zp, year, field_bfs="zone_id_home")
     df_zp = df_zp.rename(columns={"urban_typology": "urban_typology_home"})
     # CHANGED
     df_zp.fillna({"urban_typology_home": -99}, inplace=True)
 
+
+
     """ Add the data about the spatial typology of the work address (in particular the work commune) """
-    df_zp = add_urban_typology(df_zp, year, field_bfs="A_BFS")
+    df_zp = add_urban_typology(df_zp, year, field_bfs="zone_id_work")
     df_zp = df_zp.rename(columns={"urban_typology": "urban_typology_work"})
     df_zp.fillna({"urban_typology_work": -99}, inplace=True)
     return df_zp

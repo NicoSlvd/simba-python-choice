@@ -3,5 +3,4 @@ __pycache__/*
 *.pyc
 2015_2020_2021/*
 2015_2020_2021
-data
-README.md
+data/input

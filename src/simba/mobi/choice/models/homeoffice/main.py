@@ -52,14 +52,6 @@ def run_home_office_in_microcensus(
         df_zp["telecommuting"] = df_zp["telecommuting_intensity"].apply(
             lambda x: 1 if x > 0 else 0
         )
-    # need to recompute teleworking intensity variable to a different level
-
-    # split the data into training and testing
-    df_zp_train, df_zp_test = (
-        train_test_split(df_zp, test_size=test_size, random_state=seed)
-        if test_size
-        else (df_zp, None)
-    )
     """Estimation results"""
     output_directory = (
         Path(__file__)
@@ -68,6 +60,18 @@ def run_home_office_in_microcensus(
         .joinpath("homeoffice")
     )
     output_directory.mkdir(parents=True, exist_ok=True)
+
+    if estimator == "dcm_all_data":
+        # define telecommuting intensity variable
+        df_zp = estimate_choice_model_telecommuting(df_zp, output_directory, intensity_cutoff, None, year, seed)
+        return
+
+    # split the data into training and testing
+    df_zp_train, df_zp_test = (
+        train_test_split(df_zp, test_size=test_size, random_state=seed)
+        if test_size
+        else (df_zp, None)
+    )
 
     #estimate choice model
     if estimator == "dcm":
@@ -80,6 +84,10 @@ def run_home_office_in_microcensus(
         train_rumboost_telecommuting(
             df_zp_train, output_directory, intensity_cutoff, df_zp_test, year, seed
         )
+    elif estimator == "lin_rumboost":
+        train_rumboost_telecommuting(
+            df_zp_train, output_directory, intensity_cutoff, df_zp_test, year, seed, lin_rumboost=True
+        )
     elif estimator == "linearised_model":
         estimate_linearised_model_telecommuting(
             df_zp_train, output_directory, intensity_cutoff, df_zp_test, year, seed
@@ -87,16 +95,17 @@ def run_home_office_in_microcensus(
 
 
 if __name__ == "__main__":
-    # models = ["dcm", "rumboost"]
-    models = ["linearised_model"]
-    # models = ["rumboost"]
+    # models = ["dcm"]
+    models = ["dcm_all_data"]
+    # models = ["lin_rumboost"]
     # models = ["dcm", "rumboost", "linearised_model"]
     # intensity_cutoffs = [20, 10, 0]
     intensity_cutoffs = [20]
 
     for model in models:
         for cutoff in intensity_cutoffs:
-            for seed in range(10): # 10 runs to mitigate randomness
+            # for seed in range(10): # 10 runs to mitigate randomness
+            for seed in [1002]: # 1000 for dcm all data
                 if model == "dcm":
                     path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
                         "output"
@@ -107,6 +116,11 @@ if __name__ == "__main__":
                         "output"
                     ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
                     path = path / f"rumboost_metrics_wfh_intensity{cutoff}_all_vars_seed{seed}_.csv" if cutoff else path / f"rumboost_metrics_wfh_possibility_seed{seed}_.csv"
+                elif model == "lin_rumboost":
+                    path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
+                        "output"
+                    ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
+                    path = path / f"linrumboost_metrics_wfh_intensity{cutoff}_all_vars_seed{seed}_.csv" if cutoff else path / f"linrumboost_metrics_wfh_possibility_seed{seed}_.csv"
                 elif model == "linearised_model":
                     path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
                         "output"

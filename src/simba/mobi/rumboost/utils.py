@@ -1,7 +1,7 @@
 import numpy as np
-from src.simba.mobi.rumboost.metrics import cross_entropy
-from scipy.special import softmax
-
+import torch
+from src.simba.mobi.rumboost.metrics import cross_entropy, binary_cross_entropy
+from scipy.special import softmax, expit
 
 def optimise_asc(asc, raw_preds, labels):
     """
@@ -19,11 +19,15 @@ def optimise_asc(asc, raw_preds, labels):
     Returns
     -------
     asc : np.array
-        The optimised ASC parameters.
+    The optimised ASC parameters.
     """
     raw_preds_asc = raw_preds + asc
-    new_preds = softmax(raw_preds_asc, axis=1)
-    new_ce = cross_entropy(new_preds, labels)
+    if len(np.unique(labels)) == 2:
+        new_preds = expit(raw_preds_asc)
+        new_ce = binary_cross_entropy(new_preds, labels)
+    else:
+        new_preds = softmax(raw_preds_asc, axis=1)
+        new_ce = cross_entropy(new_preds, labels)
 
     return new_ce
     
@@ -425,3 +429,61 @@ def sort_dict(dict_to_sort):
         dict_sorted[k] = dict_to_sort[k]
 
     return dict_sorted
+    
+def _load_arrays_and_tensors(rumb):
+    
+    if isinstance(rumb.device, str):
+        rumb.device = torch.device(rumb.device)
+
+    if isinstance(rumb.alphas, list):  # numpy.ndarray so need to specify not None
+        if "device" in rumb.__dict__ and rumb.device is not None:
+            rumb.alphas = torch.tensor(rumb.alphas, device=rumb.device)
+        else:
+            rumb.alphas = np.array(rumb.alphas)
+    if isinstance(rumb.mu, list):  # numpy.ndarray so need to specify not None
+        if "device" in rumb.__dict__ and rumb.device is not None:
+            rumb.mu = torch.tensor(rumb.mu, device=rumb.device)
+        else:
+            rumb.mu = np.array(rumb.mu)
+    if isinstance(rumb.thresholds, list):  # numpy.ndarray so need to specify not None
+        if "device" in rumb.__dict__ and rumb.device is not None:
+            rumb.thresholds = torch.tensor(rumb.thresholds, device=rumb.device)
+        else:
+            rumb.thresholds = np.array(rumb.thresholds)
+    if isinstance(rumb.asc, list):  # numpy.ndarray so need to specify not None
+        if "device" in rumb.__dict__ and rumb.device is not None:
+            rumb.asc = torch.tensor(rumb.asc, device=rumb.device)
+        else:
+            rumb.asc = np.array(rumb.asc)
+    
+def _check_rum_structure(rum_structure):
+    """ Check that rum_structure, a list of dictionaries, is of the correct format. """
+
+    if not isinstance(rum_structure, list):
+        raise ValueError("rum_structure must be a list")
+
+    for i, rum_struct in enumerate(rum_structure):
+        if "utility" not in rum_struct:
+            raise ValueError(
+                f"rum_structure {i} must contain utility key with the list of alternatives"
+            )
+        if "variables" not in rum_struct:
+            raise ValueError(
+                f"rum_structure {i} must contain variables key with the list of variables"
+            )
+        if "boosting_params" not in rum_struct:
+            raise ValueError(
+                f"rum_structure {i} must contain boosting_params key with the boosting parameters"
+            )
+        if "shared" not in rum_struct:
+            raise ValueError(
+                f"rum_structure {i} must contain shared key with a boolean value"
+            )
+        if len(rum_struct["utility"]) > 1 and not rum_struct["shared"]:
+            raise ValueError(
+                f"rum_structure {i} must be shared if the parameter is used in more than one utility function"
+            )
+        if rum_struct["shared"] and len(rum_struct["utility"]) != len(rum_struct["variables"]):
+            raise ValueError(
+                f"rum_structure {i} must have the same number of variables and utility functions if shared is True"
+            )

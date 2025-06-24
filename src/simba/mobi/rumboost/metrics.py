@@ -82,17 +82,17 @@ def mse(preds, target):
     return np.mean((preds.reshape(-1) - target) ** 2)
 
 
-def weighted_binary_cross_entropy(preds, labels):
+def weighted_binary_cross_entropy(logits, labels):
     """
-    Compute weighted binary cross entropy for given predictions and data.
+    Compute weighted binary cross entropy for given logits and data.
     The weights are all ones. This function is used in the ordinal 
     regression model with coral estimation.
 
     Parameters
     ----------
-    preds: numpy array
-        Predictions for all data points and each classes from a sigmoid function. preds[i, j] correspond
-        to the prediction of data point i to belong to class j.
+    logits: numpy array
+        Logits for all data points and each classes. logits[i, j] correspond
+        to the logits of data point i to class j.
     labels: numpy array
         The labels of the original dataset, as int.
 
@@ -101,14 +101,11 @@ def weighted_binary_cross_entropy(preds, labels):
     Cross entropy : float
         The negative cross-entropy, as float.
     """
-    classes = np.arange(np.unique(labels).shape[0] - 1)
-    binary_labels = labels[:, None] > classes[None, :]
-    return -np.mean(
-        np.sum(
-            binary_labels * np.log(preds) + (1 - binary_labels) * np.log(1 - preds),
-            axis=1,
-        )
-    )
+    binary_labels = labels.reshape(-1, 1) > np.arange(logits.shape[1])
+    logits_exp = np.logaddexp(0, logits)
+    loss = (1 - binary_labels) * logits -logits_exp
+
+    return -np.mean(loss)
 
 def safe_softplus(x, beta = 1, threshold = 20):
     """
@@ -128,4 +125,25 @@ def safe_softplus(x, beta = 1, threshold = 20):
     Softplus : numpy array
         The softplus function applied to x.
     """
-    return np.where(beta * x > threshold, x, 1 / beta * np.logaddexp(0, beta * x))
+    return np.where(beta * x > threshold, x, (1 / beta) * np.logaddexp(0, beta * x))
+
+def coral_eval(preds, labels):
+    """
+    Evaluate the Coral model using the multilabel binary cross-entropy loss function.
+
+    Parameters
+    ----------
+    preds : np.array
+        The predictions of the model.
+    labels : np.array
+        The labels of the dataset.
+
+    Returns
+    -------
+    loss : float
+        The cross-entropy loss.
+    """
+    sigmoids = - np.cumsum(preds, axis=1)[:, :-1] + 1
+    classes = np.arange(preds.shape[1] - 1)
+    levels = labels[:, None] > classes[None, :]
+    return - np.mean(np.log(sigmoids) * levels + np.log(1 - sigmoids) * (1 - levels), axis=1).mean()
