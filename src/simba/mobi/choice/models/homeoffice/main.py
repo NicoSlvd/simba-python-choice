@@ -1,7 +1,9 @@
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", ".."))
+sys.path.append(
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "..")
+)
 
 from pathlib import Path
 from argparse import ArgumentParser, BooleanOptionalAction
@@ -13,7 +15,7 @@ from src.simba.mobi.choice.models.homeoffice.descriptive_stats import (
     descriptive_statistics,
 )
 from src.simba.mobi.choice.models.homeoffice.model_definition import (
-    define_telecommuting_intensity_variable
+    define_telecommuting_intensity_variable,
 )
 from src.simba.mobi.choice.models.homeoffice.model_estimation import (
     estimate_choice_model_telecommuting,
@@ -21,15 +23,17 @@ from src.simba.mobi.choice.models.homeoffice.model_estimation import (
 from src.simba.mobi.choice.models.homeoffice.rumboost_estimation import (
     train_rumboost_telecommuting,
 )
-from src.simba.mobi.choice.models.homeoffice.linearised_model_estimation import (
-    estimate_linearised_model_telecommuting,
-)
 import gc
 import torch
 
 
 def run_home_office_in_microcensus(
-    year, estimator, intensity_cutoff, data_intensity_only, test_size, seed,
+    year,
+    estimator,
+    intensity_cutoff,
+    data_intensity_only,
+    test_size,
+    seed,
 ) -> None:
     """Generate 2015 data"""
     input_directory = Path(
@@ -42,9 +46,9 @@ def run_home_office_in_microcensus(
     df_zp = get_data(input_directory, intensity_cutoff=intensity_cutoff)
     df_zp = df_zp[df_zp["year"] == year] if year else df_zp
     if data_intensity_only or intensity_cutoff:
-        #only keep the data where telecommuting is available
+        # only keep the data where telecommuting is available
         df_zp = df_zp[df_zp["telecommuting"] > 0]
-        #remove missing observations
+        # remove missing observations
         df_zp = df_zp[df_zp["percentage_telecommuting"] >= 0]
     if data_intensity_only:
         # new dependant variable for comparing binary logit and ordinal logit
@@ -53,85 +57,86 @@ def run_home_office_in_microcensus(
             lambda x: 1 if x > 0 else 0
         )
     """Estimation results"""
+    modelling_task = "intensity" if intensity_cutoff else "possibility"
     output_directory = (
         Path(__file__)
         .parent.parent.parent.joinpath("data")
         .joinpath("output")
         .joinpath("homeoffice")
+        .joinpath("models")
+        .joinpath("estimation")
+        .joinpath(str(year))
+        .joinpath(f"{estimator}")
+        .joinpath(f"{modelling_task}")
     )
     output_directory.mkdir(parents=True, exist_ok=True)
-
     if estimator == "dcm_all_data":
         # define telecommuting intensity variable
-        df_zp = estimate_choice_model_telecommuting(df_zp, output_directory, intensity_cutoff, None, year, seed)
+        df_zp = estimate_choice_model_telecommuting(
+            df_zp, output_directory, intensity_cutoff, None, year, seed
+        )
         return
-
+    elif estimator == "rumboost_all_data":
+        train_rumboost_telecommuting(
+            df_zp, output_directory, intensity_cutoff, None, year, seed
+        )
+        return
+    elif estimator == "lin_rumboost_all_data":
+        train_rumboost_telecommuting(
+            df_zp,
+            output_directory,
+            intensity_cutoff,
+            None,
+            year,
+            seed,
+            lin_rumboost=True,
+        )
+        return
     # split the data into training and testing
     df_zp_train, df_zp_test = (
         train_test_split(df_zp, test_size=test_size, random_state=seed)
         if test_size
         else (df_zp, None)
     )
-
+    
     #estimate choice model
     if estimator == "dcm":
         estimate_choice_model_telecommuting(
             df_zp_train, output_directory, intensity_cutoff, df_zp_test, year, seed
         )
         # descriptive_statistics(output_directory)
-    #estimate rumboost
+    # estimate rumboost
     elif estimator == "rumboost":
         train_rumboost_telecommuting(
             df_zp_train, output_directory, intensity_cutoff, df_zp_test, year, seed
         )
     elif estimator == "lin_rumboost":
         train_rumboost_telecommuting(
-            df_zp_train, output_directory, intensity_cutoff, df_zp_test, year, seed, lin_rumboost=True
-        )
-    elif estimator == "linearised_model":
-        estimate_linearised_model_telecommuting(
-            df_zp_train, output_directory, intensity_cutoff, df_zp_test, year, seed
+            df_zp_train,
+            output_directory,
+            intensity_cutoff,
+            df_zp_test,
+            year,
+            seed,
+            lin_rumboost=True,
         )
 
 
 if __name__ == "__main__":
-    # models = ["dcm"]
-    models = ["dcm_all_data"]
-    # models = ["lin_rumboost"]
-    # models = ["dcm", "rumboost", "linearised_model"]
-    # intensity_cutoffs = [20, 10, 0]
+    #models = ["dcm_all_data", "dcm", "rumboost_all_data", "lin_rumboost_all_data",  "rumboost", "lin_rumboost"] # 
+    models = ["dcm_all_data", "dcm"]
+    # models = ["dcm", "rumboost", "lin_rumboost"]
+    # intensity_cutoffs = [20, 0]
     intensity_cutoffs = [20]
 
     for model in models:
         for cutoff in intensity_cutoffs:
-            # for seed in range(10): # 10 runs to mitigate randomness
-            for seed in [1002]: # 1000 for dcm all data
-                if model == "dcm":
-                    path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
-                        "output"
-                    ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
-                    path = path / f"metrics_wfh_intensity{cutoff}_all_vars_seed{seed}_.csv" if cutoff else path / f"metrics_wfh_possibility_seed{seed}_.csv"
-                elif model == "rumboost":
-                    path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
-                        "output"
-                    ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
-                    path = path / f"rumboost_metrics_wfh_intensity{cutoff}_all_vars_seed{seed}_.csv" if cutoff else path / f"rumboost_metrics_wfh_possibility_seed{seed}_.csv"
-                elif model == "lin_rumboost":
-                    path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
-                        "output"
-                    ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
-                    path = path / f"linrumboost_metrics_wfh_intensity{cutoff}_all_vars_seed{seed}_.csv" if cutoff else path / f"linrumboost_metrics_wfh_possibility_seed{seed}_.csv"
-                elif model == "linearised_model":
-                    path = Path(__file__).parent.parent.parent.joinpath("data").joinpath(
-                        "output"
-                    ).joinpath("homeoffice").joinpath("models").joinpath("estimation").joinpath("2021")
-                    path = path / f"lm_metrics_wfh_intensity{cutoff}_seed{seed}_.csv" if cutoff else path / f"lm_metrics_wfh_possibility_seed{seed}_.csv"
-
-                # if path.exists():
-                #     print(f"File already exists, skipping {model} with intensity_cutoff={cutoff}, seed={seed}")
-                #     continue
-                # else:
-                print(f"Running main.py with model={model} and intensity_cutoff={cutoff}, seed={seed}")
+            for seed in range(10): # 10 runs to mitigate randomness
+                if "all_data" in model and seed != 0:
+                    continue
+                print(
+                    f"Running main.py with model={model} and intensity_cutoff={cutoff}, seed={seed}"
+                )
                 # subprocess.run(["python", MAIN_FILE, "--model", model, "--intensity_cutoff", str(cutoff)])
                 argparser = ArgumentParser()
                 argparser.add_argument(

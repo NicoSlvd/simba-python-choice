@@ -24,9 +24,6 @@ def estimate_choice_model_telecommuting(
     year: int = None,
     seed: int = None,
 ) -> None:
-    year_name = f"{year}" if year else "2015_2020_2021"
-    output_directory = output_directory / f"models/estimation/{year_name}/"
-    output_directory.mkdir(parents=True, exist_ok=True)
     run_estimation(df_zp, output_directory, intensity_cutoff, df_zp_test, seed)
 
 
@@ -105,7 +102,7 @@ def run_estimation(
         # + models.piecewiseFormula(work_percentage_15, [0, 95, 101])
         # + dict_betas["b_executives_1520"] * executives_1520
         + dict_betas["b_german_speaking"] * german_speaking
-        # + dict_betas["b_no_post_school_education"] * no_post_school_educ #P-value > 0.8
+        + dict_betas["b_no_post_school_education"] * no_post_school_educ #P-value > 0.8
         + dict_betas["b_secondary_education"] * secondary_education
         + dict_betas["b_tertiary_education"] * tertiary_education
         # + dict_betas["b_rural_work_1520"] * rural_work_1520
@@ -117,7 +114,7 @@ def run_estimation(
         + dict_betas["b_number_of_children"] * number_of_children_not_NA
         # + dict_betas["b_number_of_children_NA"] * number_of_children_NA #P-value > 0.8
         + dict_betas["b_single_household"] * single_household
-        # + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax #P-value > 0.2
+        + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax #P-value > 0.2
         # + models.piecewiseFormula(home_work_distance_car, [0, 0.15]) # correlated with travel times
         # + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA #correlated with travel times NA
         # + dict_betas["b_is_agriculture_1_15"] * business_sector_agriculture_15
@@ -166,11 +163,11 @@ def run_estimation(
         # + dict_betas["b_typology_home_rural"] * typology_home_rural  #removed because corellated with urban typology
         + dict_betas["b_pt_travel_times_not_NA"] * pt_travel_times_not_NA
         # + dict_betas["b_pt_travel_times_NA"] * pt_travel_times_NA # grouped because corellated with other tt NA variables
-        # + dict_betas["b_pt_access_times_not_NA"] * pt_access_times_not_NA #P-value > 0.2
+        + dict_betas["b_pt_access_times_not_NA"] * pt_access_times_not_NA #P-value > 0.2
         # + dict_betas["b_pt_access_times_NA"] * pt_access_times_NA # grouped because corellated with other tt NA variables
         + dict_betas["b_pt_egress_times_not_NA"] * pt_egress_times_not_NA
         # + dict_betas["b_pt_egress_times_NA"] * pt_egress_times_NA # grouped because corellated with other tt NA variables
-        # + dict_betas["b_n_transfers_not_NA"] * n_transfers_not_NA #P-value > 0.2
+        + dict_betas["b_n_transfers_not_NA"] * n_transfers_not_NA #P-value > 0.2
         # + dict_betas["b_n_transfers_NA"] * n_transfers_NA # grouped because corellated with other tt NA variables
         + dict_betas["b_pt_tt_or_transfers_NA"] * pt_tt_or_transfers_NA
     )
@@ -201,7 +198,7 @@ def run_estimation(
     # Definition of the model. This is the contribution of each observation to the log likelihood function.
     # Choice variable: "telecommuting"
     if intensity_cutoff:
-        model_name = f"wfh_intensity{intensity_cutoff}_model_sbb_all_vars_and_tt_seed{seed}"
+        model_name = f"wfh_intensity_seed{seed}"
 
         the_proba = models.ordered_logit(
             continuous_value=V,
@@ -214,7 +211,7 @@ def run_estimation(
         logprob = log(the_chosen_proba)
 
     else:
-        model_name = f"wfh_possibility_model_sbb_seed{seed}"
+        model_name = f"wfh_possibility_seed{seed}"
 
         logprob = models.loglogit(V, av, telecommuting)
 
@@ -228,14 +225,9 @@ def run_estimation(
     results = estimate_in_directory(the_biogeme, output_directory)
 
     df_parameters = results.getEstimatedParameters()
-    str_model = (
-        f"intensity{intensity_cutoff}_tt_seed{seed}"
-        if intensity_cutoff
-        else f"possibility_seed{seed}"
-    )
+    str_model = f"seed{seed}"
     file_name = (
-        f"parameters_dcm_wfh_{str_model}_"
-        + datetime.now().strftime("%Y_%m_%d-%H_%M")
+        f"parameters_{str_model}"
         + ".csv"
     )
     df_parameters.to_csv(output_directory / file_name)
@@ -353,8 +345,7 @@ def run_estimation(
         metrics_df = pd.concat([metrics_df, pd.DataFrame(metrics, index=["test"])])
 
     file_name = (
-        f"metrics_wfh_{str_model}_" 
-        # + datetime.now().strftime("%Y_%m_%d-%H_%M") 
+        f"metrics_{str_model}"
         + ".csv"
     )
     metrics_df.to_csv(output_directory / file_name)

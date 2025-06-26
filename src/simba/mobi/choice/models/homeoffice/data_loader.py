@@ -61,7 +61,7 @@ def get_data_per_year(year: int, intensity_cutoff: int = None) -> pd.DataFrame:
     # path_to_skim_file = (path_to_mobi_server / r"50_Ergebnisse/MOBi_3.2/plans/3.2_2017_10pct/")
     # CHANGED
     path_to_data = Path(
-        os.path.join(os.getcwd(), "..", "..", "choice_set_location_travelmode", "Data")
+        os.path.join(os.getcwd(), "..")
     )
     path_to_npvm_zones = (
         path_to_data
@@ -651,9 +651,7 @@ def add_pt_travel_times_and_transfers(
     ]
 
     # Open skim file
-    # skims = omx.open_file(path_to_skim_file / "pt_skims.omx", "r")
-    # CHANGED
-    skims = omx.open_file(Path(os.path.join(os.getcwd(), "..\pt_skims.omx")), "r")
+    skims = omx.open_file(path_to_skim_file / "pt_skims.omx", "r")
     # Load pt travel time
     travel_times = np.array(skims["travel_times"])
     access_times = np.array(skims["access_times"])

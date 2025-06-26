@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import torch
 import lightgbm as lgb
 import biogeme.biogeme as bio
 import glob
@@ -29,8 +30,7 @@ def calibrate_constants(
     intensity_cutoff=0,
     seed=0,
     tol=0.01,
-    results_directory=os.getcwd() + r"\homeoffice\models\estimation\2021",
-    all_vars="",
+    results_directory=os.getcwd() + "/homeoffice/models/estimation/2021/",
     save_results=True,
 ):
     """
@@ -65,14 +65,19 @@ def calibrate_constants(
         The model with the updated constants.
     """
     # load data and split into training and testing
+    if "all_data" in model_type:
+        test_size = 0
+    else:
+        test_size = 0.2
     data_train, data_test = load_and_split_dataset(
-        intensity_cutoff=intensity_cutoff, year=2021, test_size=0.2, seed=seed
+        intensity_cutoff=intensity_cutoff, year=2021, test_size=test_size, seed=seed
     )
 
     observed_ms = observed_market_shares(data_train, intensity_cutoff)
 
-    linearised_str = "linearised_" if model_type == "linearised_model" else ""
-    linearised = model_type == "linearised_model"
+    # add correct directory to results_directory
+    modelling_task = "intensity" if intensity_cutoff else "possibility"
+    results_directory = results_directory + f"{model_type}/{modelling_task}/"
 
     # load model and return the betas as dict and df (for dcm) and dataset with new variables (for rumboost)
     model, betas, betas_to_update, data_train, data_test, df_dcm = load_model_and_betas(
@@ -82,9 +87,6 @@ def calibrate_constants(
         seed,
         data_train,
         data_test,
-        linearised_str=linearised_str,
-        linearised=linearised,
-        all_vars=all_vars,
     )
 
     # initial market shares prediction
@@ -103,7 +105,7 @@ def calibrate_constants(
                 b, observed_ms[i], predicted_ms[i], lr=lr
             )  # update constant
             b = new_b
-            if model_type == "dcm" or model_type == "linearised_model":
+            if "dcm" in model_type:  # dcm
                 if intensity_cutoff:
                     betas_to_update[i] = new_b  # update the threshold
                     if i == 0:
@@ -135,49 +137,24 @@ def calibrate_constants(
             print(f"ASC calibrated for model {model_type} {all_vars} and run {seed}")
 
     if save_results:  # save the results
-        if model_type == "dcm" or model_type == "linearised_model":
-            # recompute metrics
-            metrics_df = recompute_metrics(
-                data_train,
-                data_test,
-                model,
-                betas,
-                intensity_cutoff,
-                linearised=linearised,
-            )
+        # recompute metrics
+        metrics_df = recompute_metrics(
+            data_train,
+            model,
+            betas,
+            intensity_cutoff,
+            data_test,
+        )
 
-            # save metrics and parameters
-            short_str = "lm_" if model_type == "linearised_model" else ""
-            metrics_df.to_csv(
-                f"{results_directory}/{short_str}metrics_wfh_intensity{intensity_cutoff}{all_vars}_seed{seed}_calibrated.csv"
-                if intensity_cutoff
-                else f"{results_directory}/{short_str}metrics_wfh_possibility_seed{seed}_calibrated.csv"
-            )
-            save_file = (
-                f"{results_directory}/parameters_dcm_{linearised_str}wfh_intensity{intensity_cutoff}{all_vars}_seed{seed}_calibrated.csv"
-                if intensity_cutoff
-                else f"{results_directory}/parameters_dcm_{linearised_str}wfh_possibility_seed{seed}_calibrated.csv"
-            )
+        # save metrics
+        metrics_df.to_csv(results_directory + f"metrics_seed{seed}_calibrated.csv")
+        if "dcm" in model_type:
+            #save parameters
+            save_file = results_directory + f"parameters_seed{seed}_calibrated.csv"
             df_dcm.loc[:, "Value"] = list(betas.values())
             df_dcm.to_csv(save_file)
         else:  # rumboost
-            # recompute metrics
-            metrics_df = recompute_metrics(
-                data_train, data_test, model, betas, intensity_cutoff
-            )
-
-            # save metrics and model
-            metrics_df.to_csv(
-                f"{results_directory}/rumboost_metrics_wfh_intensity{intensity_cutoff}{all_vars}_seed{seed}_calibrated.csv"
-                if intensity_cutoff
-                else f"{results_directory}/rumboost_metrics_wfh_possibility_seed{seed}_calibrated.csv"
-            )
-
-            save_file = (
-                f"{results_directory}/rumboost_model_wfh_intensity{intensity_cutoff}{all_vars}_seed{seed}_calibrated.json"
-                if intensity_cutoff
-                else f"{results_directory}/rumboost_model_wfh_possibility_seed{seed}_calibrated.json"
-            )
+            save_file = results_directory + f"model_seed{seed}_calibrated.json"
             model.save_model(save_file)
 
     return model, betas
@@ -222,6 +199,8 @@ def predicted_market_shares(data_train, model, intensity_cutoff, betas=None):
                 free_raw_data=False,
             )
             preds = model.predict(train_set)
+            if isinstance(preds, torch.Tensor):
+                preds = preds.cpu().numpy()
             predicted_ms = (preds * data_train["WP"].values[:, None]).sum(
                 axis=0
             ) / data_train["WP"].sum()
@@ -232,6 +211,8 @@ def predicted_market_shares(data_train, model, intensity_cutoff, betas=None):
                 free_raw_data=False,
             )
             preds = expit(model.predict(train_set, utilities=True) + model.asc)
+            if isinstance(preds, torch.Tensor):
+                preds = preds.cpu().numpy()
             predicted_ms = (preds * data_train["WP"].values[:, None]).sum(
                 axis=0
             ) / data_train["WP"].sum()
@@ -312,20 +293,10 @@ def load_model_and_betas(
     data_train,
     data_test=None,
     df_dcm=None,
-    linearised=False,
-    linearised_str="",
-    all_vars="",
 ):
     """Load the model and the betas from the estimation results"""
-    if model_type == "dcm" or model_type == "linearised_model":
-        if intensity_cutoff:
-            results_file = glob.glob(
-                f"{results_directory}/parameters_dcm_{linearised_str}wfh_intensity{intensity_cutoff}_{all_vars}_seed{seed}_*.csv"
-            )[0]
-        else:
-            results_file = glob.glob(
-                f"{results_directory}/parameters_dcm_{linearised_str}wfh_possibility_seed{seed}_*.csv"
-            )[0]
+    if "dcm" in model_type:
+        results_file = f"{results_directory}/parameters_seed{seed}.csv"
         with open(results_file, "r") as f:
             df_dcm = pd.read_csv(f, index_col=0)
         betas = df_dcm.loc[:, "Value"].to_dict()  # all betas
@@ -335,24 +306,14 @@ def load_model_and_betas(
                 betas_to_update.append(betas_to_update[-1] + betas[f"tau_1_diff_{i}"])
         else:
             betas_to_update = [betas["alternative_specific_constant"]]
-        model = return_model(data_train, intensity_cutoff, linearised=linearised)
+        model = return_model(data_train, intensity_cutoff)
 
-    elif model_type == "rumboost":
+    elif "rumboost" in model_type:
         choice = "telecommuting_intensity" if intensity_cutoff else "telecommuting"
         data_train = define_variables(data_train, choice)
-        data_test = define_variables(data_test, choice)
-        if intensity_cutoff:
-            results_file = glob.glob(
-                f"{results_directory}/rumboost_model_wfh_intensity{intensity_cutoff}{all_vars}_seed{seed}_*.json"
-            )[0]
-        else:
-            results_file = glob.glob(
-                f"{results_directory}/rumboost_model_wfh_possibility_seed{seed}_*.json"
-            )[0]
+        data_test = define_variables(data_test, choice) if data_test is not None else None
+        results_file = f"{results_directory}/model_seed{seed}.json"
         model = RUMBoost(model_file=results_file)
-        model.device = None
-        weights = weights_to_plot_v2(model)["0"]
-        model.asc = np.sum([v["Histogram values"][0] for v in weights.values()])
         betas = None
 
         # compute the implicit asc for binary model
@@ -365,7 +326,7 @@ def load_model_and_betas(
 
 
 def recompute_metrics(
-    data_train, data_test, model, betas, intensity_cutoff, linearised=False
+    data_train, model, betas, intensity_cutoff, data_test=None
 ):
     """Recompute the metrics of the model after calibration"""
     if isinstance(model, RUMBoost):  # rumboost
@@ -388,40 +349,47 @@ def recompute_metrics(
             )
         )
         y_pred_train = model.predict(train_set)
+        if isinstance(y_pred_train, torch.Tensor):
+            y_pred_train = y_pred_train.cpu().numpy()
         tau_1 = model.thresholds[0] if intensity_cutoff else None
         metrics_train, intercept_mae, intercept_mse = calculate_metrics(
             y_true_train, y_pred_train, intensity_cutoff, tau_1
         )
-        y_true_test = (
-            data_test["telecommuting_intensity"].values.astype(int)
-            if intensity_cutoff
-            else data_test["telecommuting"].values.astype(int)
-        )
-        test_set = (
-            lgb.Dataset(
-                data_test.drop(columns=["telecommuting_intensity"]),
-                label=data_test["telecommuting_intensity"],
-                free_raw_data=False,
+        if data_test is not None:  # no test set, return only train metrics
+            y_true_test = (
+                data_test["telecommuting_intensity"].values.astype(int)
+                if intensity_cutoff
+                else data_test["telecommuting"].values.astype(int)
             )
-            if intensity_cutoff
-            else lgb.Dataset(
-                data_test.drop(columns=["telecommuting"]),
-                label=data_test["telecommuting"],
-                free_raw_data=False,
+            test_set = (
+                lgb.Dataset(
+                    data_test.drop(columns=["telecommuting_intensity"]),
+                    label=data_test["telecommuting_intensity"],
+                    free_raw_data=False,
+                )
+                if intensity_cutoff
+                else lgb.Dataset(
+                    data_test.drop(columns=["telecommuting"]),
+                    label=data_test["telecommuting"],
+                    free_raw_data=False,
+                )
             )
-        )
-        y_pred_test = model.predict(test_set)
-        metrics_test, _, _ = calculate_metrics(
-            y_true_test,
-            y_pred_test,
-            intensity_cutoff,
-            tau_1,
-            intercept_mae,
-            intercept_mse,
-        )
-        metrics_df = pd.DataFrame(
-            [metrics_train, metrics_test], index=["train", "test"]
-        )
+            y_pred_test = model.predict(test_set)
+            if isinstance(y_pred_test, torch.Tensor):
+                y_pred_test = y_pred_test.cpu().numpy()
+            metrics_test, _, _ = calculate_metrics(
+                y_true_test,
+                y_pred_test,
+                intensity_cutoff,
+                tau_1,
+                intercept_mae,
+                intercept_mse,
+            )
+            metrics_df = pd.DataFrame(
+                [metrics_train, metrics_test], index=["train", "test"]
+            )
+        else:
+            metrics_df = pd.DataFrame([metrics_train], index=["train"])
     else:
         y_true_train = (
             data_train["telecommuting_intensity"].values.astype(int)
@@ -433,25 +401,28 @@ def recompute_metrics(
         metrics_train, intercept_mae, intercept_mse = calculate_metrics(
             y_true_train, y_pred_train, intensity_cutoff, tau_1
         )
-        model_pred = return_model(
-            data_train, intensity_cutoff, data_test, linearised=linearised
-        )
-        y_pred_test = model_pred.simulate(betas).values
-        y_true_test = (
-            data_test["telecommuting_intensity"].values.astype(int)
-            if intensity_cutoff
-            else data_test["telecommuting"].values.astype(int)
-        )
-        metrics_test, _, _ = calculate_metrics(
-            y_true_test,
-            y_pred_test,
-            intensity_cutoff,
-            tau_1,
-            intercept_mae,
-            intercept_mse,
-        )
-        metrics_df = pd.DataFrame(
-            [metrics_train, metrics_test], index=["train", "test"]
-        )
+        if data_test is not None:  
+            model_pred = return_model(
+                data_train, intensity_cutoff, data_test
+            )
+            y_pred_test = model_pred.simulate(betas).values
+            y_true_test = (
+                data_test["telecommuting_intensity"].values.astype(int)
+                if intensity_cutoff
+                else data_test["telecommuting"].values.astype(int)
+            )
+            metrics_test, _, _ = calculate_metrics(
+                y_true_test,
+                y_pred_test,
+                intensity_cutoff,
+                tau_1,
+                intercept_mae,
+                intercept_mse,
+            )
+            metrics_df = pd.DataFrame(
+                [metrics_train, metrics_test], index=["train", "test"]
+            )
+        else:
+            metrics_df = pd.DataFrame([metrics_train], index=["train"])
 
     return metrics_df

@@ -4,13 +4,17 @@ import numpy as np
 
 
 def define_variables(
-    df_zp: pd.DataFrame, choice_var_name: str, remove_corr_vars: bool = False
+    df_zp: pd.DataFrame,
+    choice_var_name: str,
+    remove_corr_vars: bool = False,
+    for_binary_model: bool = False,
 ) -> pd.DataFrame:
     """Define variables for the RUMBoost model based on the provided DataFrame.
     Args:
         df_zp (pd.DataFrame): DataFrame containing the data.
         choice_var_name (str): Name of the choice variable.
         remove_corr_vars (bool): Whether to remove correlated variables.
+        for_binary_model (bool): Whether the model is for binary choice (default is False).
     Returns:
         pd.DataFrame: DataFrame with the defined variables.
     """
@@ -196,7 +200,42 @@ def define_variables(
     ]
     new_df.loc[:, other_columns] = df_zp.loc[:, other_columns]
 
-    if remove_corr_vars:
+    if for_binary_model:
+        # for binary model, we only keep the variables that are not correlated
+        new_df = new_df.drop(
+            columns=[
+                "hh_size",
+                "identified_as_male",
+                "nb_of_cars_NA",
+                "nb_of_cars_not_NA",
+                "car_avail_NA",
+                "car_avail_not_NA_always",
+                "car_avail_not_NA_on_demand",
+                "has_driving_licence_NA",
+                "has_driving_licence_not_NA",
+                "work_time_flexibility_NA",
+                "work_time_flexibility_not_NA_fixed",
+                "work_parking_NA",
+                "work_parking_not_NA_free",
+                "is_swiss",
+                "typology_work_NA",
+                "typology_work_not_NA_urban",
+                "typology_work_not_NA_rural",
+                "typology_home_urban",
+                "typology_home_rural",
+                "pt_travel_times_not_NA",
+                "pt_travel_times_NA",
+                "pt_access_times_not_NA",
+                "pt_access_times_NA",
+                "pt_egress_times_not_NA",
+                "pt_egress_times_NA",
+                "n_transfers_not_NA",
+                "n_transfers_NA",
+                "pt_tt_or_transfers_NA",
+                "business_sector_agriculture_21",
+            ]
+        )
+    elif remove_corr_vars:
         # remove correlated variables
         new_df = new_df.drop(
             columns=[
@@ -215,6 +254,10 @@ def define_variables(
                 "n_transfers_NA",
                 # "nb_of_cars_NA",
                 "business_sector_agriculture_21",
+                "has_driving_licence_NA",
+                "has_driving_licence_not_NA",
+                "number_of_children_NA",
+                "typology_home_urban"
             ]
         )
 

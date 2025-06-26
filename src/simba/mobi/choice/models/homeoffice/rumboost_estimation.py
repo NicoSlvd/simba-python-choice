@@ -31,14 +31,18 @@ def train_rumboost_telecommuting(
     seed: int = None,
     lin_rumboost: bool = False,
 ):
-    year_name = f"{year}" if year else "2015_2020_2021"
-    output_directory = output_directory / f"models/estimation/{year_name}/"
-    output_directory.mkdir(parents=True, exist_ok=True)
-    train_rumb(df_zp, output_directory, df_zp_test, intensity_cutoff, seed, lin_rumboost)
+    train_rumb(
+        df_zp, output_directory, df_zp_test, intensity_cutoff, seed, lin_rumboost
+    )
 
 
 def train_rumb(
-    df_zp_train, output_directory, df_zp_test=None, intensity_cutoff=None, seed=None, lin_rumboost=False
+    df_zp_train,
+    output_directory,
+    df_zp_test=None,
+    intensity_cutoff=None,
+    seed=None,
+    lin_rumboost=False,
 ):
 
     if TORCH_INSTALLED:
@@ -49,12 +53,21 @@ def train_rumb(
     print("Training RUMBoost model for predicting telecommuting " + choice_situation)
 
     choice = "telecommuting_intensity" if intensity_cutoff else "telecommuting"
-    new_df_train = define_variables(df_zp_train, choice, remove_corr_vars=True)
+    for_binary_model = not intensity_cutoff
+    new_df_train = define_variables(
+        df_zp_train, choice, remove_corr_vars=True, for_binary_model=for_binary_model
+    )
     new_df_test = (
-        define_variables(df_zp_test, choice, remove_corr_vars=True) if df_zp_test is not None else None
+        define_variables(
+            df_zp_test, choice, remove_corr_vars=True, for_binary_model=for_binary_model
+        )
+        if df_zp_test is not None
+        else None
     )
 
-    model_specification = get_rumboost_model_spec(new_df_train, intensity_cutoff, lin_rumboost)
+    model_specification = get_rumboost_model_spec(
+        new_df_train, intensity_cutoff, lin_rumboost
+    )
 
     features = new_df_train.columns.tolist()
 
@@ -144,16 +157,8 @@ def train_rumb(
     if not TORCH_INSTALLED:
         torch_run = False
 
-    str_model = (
-        f"intensity{intensity_cutoff}_tt_seed{seed}"
-        if intensity_cutoff
-        else f"possibility_seed{seed}"
-    )
-    model_name = (
-        f"rumboost_model_wfh_{str_model}_"
-        + datetime.now().strftime("%Y_%m_%d-%H_%M")
-        + ".json"
-    )
+    str_model = f"seed{seed}"
+    model_name = f"model_{str_model}" + ".json"
     model.save_model(
         output_directory / model_name,
     )
@@ -190,19 +195,6 @@ def train_rumb(
 
     # save model and metrics
 
-    file_name = (
-        f"rumboost_metrics_wfh_{str_model}_"
-        # + datetime.now().strftime("%Y_%m_%d-%H_%M")
-        + ".csv"
-    )
+    file_name = f"metrics_{str_model}" + ".csv"
     metrics_df.to_csv(output_directory / file_name)
-
-    # weird bug with plot_parameters, FileNotFoundError: [Errno 2] No such file or directory for work_time_flexibility_not_NA_fixed. path too long? plot empty?
-    # plot_parameters(
-    #     model,
-    #     new_df_train,
-    #     {"0": "Utility"},
-    #     save_file=output_directory / "figures" / f"{str_model}",
-    #     no_output=True,
-    # )
 
