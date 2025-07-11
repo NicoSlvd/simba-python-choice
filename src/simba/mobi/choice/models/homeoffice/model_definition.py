@@ -197,11 +197,8 @@ def define_variables(database: pd.DataFrame) -> None:
         "nb_of_cars_not_NA", (nb_of_cars >= 0) * nb_of_cars
     )
     car_avail_NA = database.DefineVariable("car_avail_NA", car_avail < 0)
-    car_avail_not_NA_always = database.DefineVariable(
-        "car_avail_not_NA_always", (car_avail == 1)
-    )
-    car_avail_not_NA_on_demand = database.DefineVariable(
-        "car_avail_not_NA_on_demand", (car_avail == 2)
+    car_avail_not_NA = database.DefineVariable(
+        "car_avail_not_NA", ((car_avail == 1) + (car_avail == 2)) == 1
     )
     has_driving_licence_NA = database.DefineVariable(
         "has_driving_licence_NA", has_driving_licence < 0
@@ -347,11 +344,8 @@ def get_dict_betas(intensity_cutoff: int = None) -> dict:
         "b_nb_of_cars_NA": Beta("b_nb_of_cars_NA", 0, None, None, 0),
         "b_nb_of_cars_not_NA": Beta("b_nb_of_cars_not_NA", 0, None, None, 0),
         "b_car_avail_NA": Beta("b_car_avail_NA", 0, None, None, 0),
-        "b_car_avail_not_NA_always": Beta(
-            "b_car_avail_not_NA_always", 0, None, None, 0
-        ),
-        "b_car_avail_not_NA_on_demand": Beta(
-            "b_car_avail_not_NA_on_demand", 0, None, None, 0
+        "b_car_avail_not_NA": Beta(
+            "b_car_avail_not_NA", 0, None, None, 0
         ),
         "b_has_driving_licence_NA": Beta("b_has_driving_licence_NA", 0, None, None, 0),
         "b_has_driving_licence_not_NA": Beta(
@@ -429,133 +423,130 @@ def return_model(df_zp, intensity_cutoff, df_zp_test=None):
 
         # The following statement allows you to use the names of the variable as Python variable.
         globals().update(database.variables)
-    if not intensity_cutoff:
-        U = (
-            dict_betas["alternative_specific_constant"]
-            # + models.piecewiseFormula(age_1520, [18, 35])
-            # + models.piecewiseFormula(work_percentage_15, [0, 95, 101])
-            # + dict_betas["b_executives_1520"] * executives_1520
-            + dict_betas["b_german_speaking"] * german_speaking
-            + dict_betas["b_no_post_school_education"] * no_post_school_educ
-            + dict_betas["b_secondary_education"] * secondary_education
-            + dict_betas["b_tertiary_education"] * tertiary_education
-            # + dict_betas["b_rural_work_1520"] * rural_work_1520
-            + dict_betas["b_hh_income_na"] * hh_income_na
-            + dict_betas["b_hh_income_8000_or_less"] * hh_income_less_than_2000
-            + dict_betas["b_hh_income_8000_or_less"] * hh_income_2000_to_4000
-            + dict_betas["b_hh_income_8000_or_less"] * hh_income_4001_to_6000
-            + dict_betas["b_hh_income_8000_or_less"] * hh_income_6001_to_8000
-            + dict_betas["b_number_of_children"] * number_of_children_not_NA
-            + dict_betas["b_number_of_children_NA"] * number_of_children_NA
-            + dict_betas["b_single_household"] * single_household
-            + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax
-            + models.piecewiseFormula(home_work_distance_car, [0, 0.15])
-            + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA
-            # + dict_betas["b_is_agriculture_1_15"] * business_sector_agriculture_15
-            # + dict_betas["b_is_production_1520"] * business_sector_production_1520
-            # + dict_betas["b_is_wohlesale_1520"] * business_sector_wholesale_1520
-            # + dict_betas["b_is_falc_id_6to9_1520"] * is_falc_id_6to9_1520
-            + dict_betas["b_falc_id_NA"] * falc_id_NA
-            # + dict_betas["beta_accsib_home_not_NA_5_10_1520"]
-            # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 5.0), 5.0))
-            # + dict_betas["beta_accsib_home_not_NA_10_24_1520"]
-            # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 10.0), 14.0))
-            # + dict_betas["beta_work_percentage_0_95_20"]
-            # * bioMax(0.0, bioMin((work_percentage_20 - 0.0), 95.0))
-            + dict_betas["beta_work_percentage_95_101_20_21"]
-            * bioMax(0.0, bioMin((work_percentage_20_21 - 95.0), 6.0))
-            + models.piecewiseFormula(age_21, [18, 35])
-            + dict_betas["beta_work_percentage_0_95_21"]
-            * bioMax(0.0, bioMin((work_percentage_21 - 0.0), 95.0))
-            + dict_betas["b_executives_21"] * executives_21
-            + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21
-            + dict_betas["b_is_production_1_21"] * business_sector_production_21
-            + dict_betas["b_is_wohlesale_1_21"] * business_sector_wholesale_21
-            + dict_betas["b_is_falc_id_6to9_1_21"] * is_falc_id_6to9_21
-            + dict_betas["beta_accsib_home_not_NA_5_10_21"]
-            * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 5.0), 5.0))
-            + dict_betas["beta_accsib_home_not_NA_10_24_21"]
-            * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 10.0), 14.0))
-        )
-    else:
-        U = (
-            dict_betas["alternative_specific_constant"]
-            # + models.piecewiseFormula(age_1520, [18, 35])
-            # + models.piecewiseFormula(work_percentage_15, [0, 95, 101])
-            # + dict_betas["b_executives_1520"] * executives_1520
-            + dict_betas["b_german_speaking"] * german_speaking
-            + dict_betas["b_no_post_school_education"]
-            * no_post_school_educ  # P-value > 0.8
-            + dict_betas["b_secondary_education"] * secondary_education
-            + dict_betas["b_tertiary_education"] * tertiary_education
-            # + dict_betas["b_rural_work_1520"] * rural_work_1520
-            + dict_betas["b_hh_income_na"] * hh_income_na
-            + dict_betas["b_hh_income_8000_or_less"] * hh_income_less_than_2000
-            + dict_betas["b_hh_income_8000_or_less"] * hh_income_2000_to_4000
-            + dict_betas["b_hh_income_8000_or_less"] * hh_income_4001_to_6000
-            + dict_betas["b_hh_income_8000_or_less"] * hh_income_6001_to_8000
-            + dict_betas["b_number_of_children"] * number_of_children_not_NA
-            # + dict_betas["b_number_of_children_NA"] * number_of_children_NA #P-value > 0.8
-            + dict_betas["b_single_household"] * single_household
-            + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax  # P-value > 0.2
-            # + models.piecewiseFormula(home_work_distance_car, [0, 0.15]) # correlated with travel times
-            # + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA #correlated with travel times NA
-            # + dict_betas["b_is_agriculture_1_15"] * business_sector_agriculture_15
-            # + dict_betas["b_is_production_1520"] * business_sector_production_1520
-            # + dict_betas["b_is_wohlesale_1520"] * business_sector_wholesale_1520
-            # + dict_betas["b_is_falc_id_6to9_1520"] * is_falc_id_6to9_1520
-            + dict_betas["b_falc_id_NA"] * falc_id_NA
-            # + dict_betas["beta_accsib_home_not_NA_5_10_1520"]
-            # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 5.0), 5.0))
-            # + dict_betas["beta_accsib_home_not_NA_10_24_1520"]
-            # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 10.0), 14.0))
-            # + dict_betas["beta_work_percentage_0_95_20"]
-            # * bioMax(0.0, bioMin((work_percentage_20 - 0.0), 95.0))
-            + dict_betas["beta_work_percentage_95_101_20_21"]
-            * bioMax(0.0, bioMin((work_percentage_20_21 - 95.0), 6.0))
-            + models.piecewiseFormula(age_21, [18, 35])
-            + dict_betas["beta_work_percentage_0_95_21"]
-            * bioMax(0.0, bioMin((work_percentage_21 - 0.0), 95.0))
-            + dict_betas["b_executives_21"] * executives_21
-            # + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21 #values are all 0
-            + dict_betas["b_is_production_1_21"] * business_sector_production_21
-            + dict_betas["b_is_wohlesale_1_21"] * business_sector_wholesale_21
-            + dict_betas["b_is_falc_id_6to9_1_21"] * is_falc_id_6to9_21
-            + dict_betas["beta_accsib_home_not_NA_5_10_21"]
-            * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 5.0), 5.0))
-            + dict_betas["beta_accsib_home_not_NA_10_24_21"]
-            * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 10.0), 14.0))
-            # + dict_betas["b_hh_size"] * hh_size # removed because corellated with number of children
-            # + dict_betas["b_identified_as_male"] * identified_as_male # removed because not used in SBB models
-            # + dict_betas["b_nb_of_cars_NA"] * nb_of_cars_NA #P-value > 0.2
-            + dict_betas["b_nb_of_cars_not_NA"] * nb_of_cars_not_NA
-            # + dict_betas["b_car_avail_NA"] * car_avail_NA
-            + dict_betas["b_car_avail_not_NA_always"] * car_avail_not_NA_always
-            + dict_betas["b_car_avail_not_NA_on_demand"] * car_avail_not_NA_on_demand
-            # + dict_betas["b_has_driving_licence_NA"] * has_driving_licence_NA #P-value > 0.2
-            # + dict_betas["b_has_driving_licence_not_NA"] * has_driving_licence_not_NA #P-value > 0.8
-            + dict_betas["b_work_time_flexibility_NA"] * work_time_flexibility_NA
-            + dict_betas["b_work_time_flexibility_not_NA_fixed"]
-            * work_time_flexibility_not_NA_fixed
-            # + dict_betas["b_work_parking_NA"] * work_parking_NA
-            + dict_betas["b_work_parking_not_NA_free"] * work_parking_not_NA_free
-            + dict_betas["b_is_swiss"] * is_swiss
-            # + dict_betas["b_typology_work_NA"] * typology_work_NA
-            + dict_betas["b_typology_work_not_NA_urban"] * typology_work_not_NA_urban
-            # + dict_betas["b_typology_work_not_NA_rural"] * typology_work_not_NA_rural #removed because corellated with urban typology
-            # + dict_betas["b_typology_home_urban"] * typology_home_urban #P-value > 0.8
-            # + dict_betas["b_typology_home_rural"] * typology_home_rural  #removed because corellated with urban typology
-            + dict_betas["b_pt_travel_times_not_NA"] * pt_travel_times_not_NA
-            # + dict_betas["b_pt_travel_times_NA"] * pt_travel_times_NA # grouped because corellated with other tt NA variables
-            + dict_betas["b_pt_access_times_not_NA"]
-            * pt_access_times_not_NA  # P-value > 0.2
-            # + dict_betas["b_pt_access_times_NA"] * pt_access_times_NA # grouped because corellated with other tt NA variables
-            + dict_betas["b_pt_egress_times_not_NA"] * pt_egress_times_not_NA
-            # + dict_betas["b_pt_egress_times_NA"] * pt_egress_times_NA # grouped because corellated with other tt NA variables
-            + dict_betas["b_n_transfers_not_NA"] * n_transfers_not_NA  # P-value > 0.2
-            # + dict_betas["b_n_transfers_NA"] * n_transfers_NA # grouped because corellated with other tt NA variables
-            + dict_betas["b_pt_tt_or_transfers_NA"] * pt_tt_or_transfers_NA
-        )
+    
+    U = (
+        dict_betas["alternative_specific_constant"]
+        # + models.piecewiseFormula(age_1520, [18, 35])
+        # + models.piecewiseFormula(work_percentage_15, [0, 95, 101])
+        # + dict_betas["b_executives_1520"] * executives_1520
+        + dict_betas["b_german_speaking"] * german_speaking
+        + dict_betas["b_no_post_school_education"] * no_post_school_educ
+        + dict_betas["b_secondary_education"] * secondary_education
+        + dict_betas["b_tertiary_education"] * tertiary_education
+        # + dict_betas["b_rural_work_1520"] * rural_work_1520
+        # + dict_betas["b_hh_income_na"] * hh_income_na
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_less_than_2000
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_2000_to_4000
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_4001_to_6000
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_6001_to_8000
+        + dict_betas["b_number_of_children"] * number_of_children_not_NA
+        + dict_betas["b_number_of_children_NA"] * number_of_children_NA
+        + dict_betas["b_single_household"] * single_household
+        + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax
+        + models.piecewiseFormula(home_work_distance_car, [0, 0.15])
+        + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA
+        # + dict_betas["b_is_agriculture_1_15"] * business_sector_agriculture_15
+        # + dict_betas["b_is_production_1520"] * business_sector_production_1520
+        # + dict_betas["b_is_wohlesale_1520"] * business_sector_wholesale_1520
+        # + dict_betas["b_is_falc_id_6to9_1520"] * is_falc_id_6to9_1520
+        + dict_betas["b_falc_id_NA"] * falc_id_NA
+        # + dict_betas["beta_accsib_home_not_NA_5_10_1520"]
+        # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 5.0), 5.0))
+        # + dict_betas["beta_accsib_home_not_NA_10_24_1520"]
+        # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 10.0), 14.0))
+        # + dict_betas["beta_work_percentage_0_95_20"]
+        # * bioMax(0.0, bioMin((work_percentage_20 - 0.0), 95.0))
+        + dict_betas["beta_work_percentage_95_101_20_21"]
+        * bioMax(0.0, bioMin((work_percentage_20_21 - 95.0), 6.0))
+        + models.piecewiseFormula(age_21, [18, 35])
+        + dict_betas["beta_work_percentage_0_95_21"]
+        * bioMax(0.0, bioMin((work_percentage_21 - 0.0), 95.0))
+        + dict_betas["b_executives_21"] * executives_21
+        + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21
+        + dict_betas["b_is_production_1_21"] * business_sector_production_21
+        + dict_betas["b_is_wohlesale_1_21"] * business_sector_wholesale_21
+        + dict_betas["b_is_falc_id_6to9_1_21"] * is_falc_id_6to9_21
+        + dict_betas["beta_accsib_home_not_NA_5_10_21"]
+        * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 5.0), 5.0))
+        + dict_betas["beta_accsib_home_not_NA_10_24_21"]
+        * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 10.0), 14.0))
+        if not intensity_cutoff
+        else
+        dict_betas["alternative_specific_constant"]
+        # + models.piecewiseFormula(age_1520, [18, 35])
+        # + models.piecewiseFormula(work_percentage_15, [0, 95, 101])
+        # + dict_betas["b_executives_1520"] * executives_1520
+        + dict_betas["b_german_speaking"] * german_speaking
+        + dict_betas["b_no_post_school_education"] * no_post_school_educ #P-value > 0.8
+        + dict_betas["b_secondary_education"] * secondary_education
+        + dict_betas["b_tertiary_education"] * tertiary_education
+        # + dict_betas["b_rural_work_1520"] * rural_work_1520
+        # + dict_betas["b_hh_income_na"] * hh_income_na
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_less_than_2000
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_2000_to_4000
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_4001_to_6000
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_6001_to_8000
+        + dict_betas["b_number_of_children"] * number_of_children_not_NA
+        # + dict_betas["b_number_of_children_NA"] * number_of_children_NA #P-value > 0.8
+        + dict_betas["b_single_household"] * single_household
+        + dict_betas["b_general_abo_halbtax"] * general_abo_halbtax #P-value > 0.2
+        # + models.piecewiseFormula(home_work_distance_car, [0, 0.15]) # correlated with travel times
+        # + dict_betas["b_home_work_distance_car_NA"] * home_work_distance_car_NA #correlated with travel times NA
+        # + dict_betas["b_is_agriculture_1_15"] * business_sector_agriculture_15
+        # + dict_betas["b_is_production_1520"] * business_sector_production_1520
+        # + dict_betas["b_is_wohlesale_1520"] * business_sector_wholesale_1520
+        # + dict_betas["b_is_falc_id_6to9_1520"] * is_falc_id_6to9_1520
+        + dict_betas["b_falc_id_NA"] * falc_id_NA
+        # + dict_betas["beta_accsib_home_not_NA_5_10_1520"]
+        # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 5.0), 5.0))
+        # + dict_betas["beta_accsib_home_not_NA_10_24_1520"]
+        # * bioMax(0.0, bioMin((accsib_home_not_NA_1520 - 10.0), 14.0))
+        # + dict_betas["beta_work_percentage_0_95_20"]
+        # * bioMax(0.0, bioMin((work_percentage_20 - 0.0), 95.0))
+        + dict_betas["beta_work_percentage_95_101_20_21"]
+        * bioMax(0.0, bioMin((work_percentage_20_21 - 95.0), 6.0))
+        + models.piecewiseFormula(age_21, [18, 35])
+        + dict_betas["beta_work_percentage_0_95_21"]
+        * bioMax(0.0, bioMin((work_percentage_21 - 0.0), 95.0))
+        + dict_betas["b_executives_21"] * executives_21
+        # + dict_betas["b_is_agriculture_1_21"] * business_sector_agriculture_21 #values are all 0
+        + dict_betas["b_is_production_1_21"] * business_sector_production_21
+        + dict_betas["b_is_wohlesale_1_21"] * business_sector_wholesale_21
+        + dict_betas["b_is_falc_id_6to9_1_21"] * is_falc_id_6to9_21
+        + dict_betas["beta_accsib_home_not_NA_5_10_21"]
+        * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 5.0), 5.0))
+        + dict_betas["beta_accsib_home_not_NA_10_24_21"]
+        * bioMax(0.0, bioMin((accsib_home_not_NA_21 - 10.0), 14.0))
+        # + dict_betas["b_hh_size"] * hh_size # removed because corellated with number of children
+        # + dict_betas["b_identified_as_male"] * identified_as_male # removed because not used in SBB models
+        # + dict_betas["b_nb_of_cars_NA"] * nb_of_cars_NA #P-value > 0.2
+        + dict_betas["b_nb_of_cars_not_NA"] * nb_of_cars_not_NA
+        # + dict_betas["b_car_avail_NA"] * car_avail_NA
+        # + dict_betas["b_car_avail_not_NA_always"] * car_avail_not_NA_always
+        # + dict_betas["b_car_avail_not_NA_on_demand"] * car_avail_not_NA_on_demand
+        + dict_betas["b_car_avail_not_NA"] * car_avail_not_NA
+        # + dict_betas["b_has_driving_licence_NA"] * has_driving_licence_NA #P-value > 0.2
+        # + dict_betas["b_has_driving_licence_not_NA"] * has_driving_licence_not_NA #P-value > 0.8
+        + dict_betas["b_work_time_flexibility_NA"] * work_time_flexibility_NA
+        + dict_betas["b_work_time_flexibility_not_NA_fixed"] * work_time_flexibility_not_NA_fixed
+        # + dict_betas["b_work_parking_NA"] * work_parking_NA
+        + dict_betas["b_work_parking_not_NA_free"] * work_parking_not_NA_free
+        + dict_betas["b_is_swiss"] * is_swiss
+        # + dict_betas["b_typology_work_NA"] * typology_work_NA
+        + dict_betas["b_typology_work_not_NA_urban"] * typology_work_not_NA_urban
+        # + dict_betas["b_typology_work_not_NA_rural"] * typology_work_not_NA_rural #removed because corellated with urban typology
+        # + dict_betas["b_typology_home_urban"] * typology_home_urban #P-value > 0.8
+        # + dict_betas["b_typology_home_rural"] * typology_home_rural  #removed because corellated with urban typology
+        + dict_betas["b_pt_travel_times_not_NA"] * pt_travel_times_not_NA
+        # + dict_betas["b_pt_travel_times_NA"] * pt_travel_times_NA # grouped because corellated with other tt NA variables
+        + dict_betas["b_pt_access_times_not_NA"] * pt_access_times_not_NA #P-value > 0.2
+        # + dict_betas["b_pt_access_times_NA"] * pt_access_times_NA # grouped because corellated with other tt NA variables
+        + dict_betas["b_pt_egress_times_not_NA"] * pt_egress_times_not_NA
+        # + dict_betas["b_pt_egress_times_NA"] * pt_egress_times_NA # grouped because corellated with other tt NA variables
+        + dict_betas["b_n_transfers_not_NA"] * n_transfers_not_NA #P-value > 0.2
+        # + dict_betas["b_n_transfers_NA"] * n_transfers_NA # grouped because corellated with other tt NA variables
+        + dict_betas["b_pt_tt_or_transfers_NA"] * pt_tt_or_transfers_NA
+    )
     U_no_telecommuting = 0
 
     # Thresholds if ordinal logit

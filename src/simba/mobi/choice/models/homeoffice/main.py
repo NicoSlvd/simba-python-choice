@@ -70,6 +70,7 @@ def run_home_office_in_microcensus(
         .joinpath(f"{modelling_task}")
     )
     output_directory.mkdir(parents=True, exist_ok=True)
+
     if estimator == "dcm_all_data":
         # define telecommuting intensity variable
         df_zp = estimate_choice_model_telecommuting(
@@ -98,8 +99,8 @@ def run_home_office_in_microcensus(
         if test_size
         else (df_zp, None)
     )
-    
-    #estimate choice model
+
+    # estimate choice model
     if estimator == "dcm":
         estimate_choice_model_telecommuting(
             df_zp_train, output_directory, intensity_cutoff, df_zp_test, year, seed
@@ -123,9 +124,7 @@ def run_home_office_in_microcensus(
 
 
 if __name__ == "__main__":
-    #models = ["dcm_all_data", "dcm", "rumboost_all_data", "lin_rumboost_all_data",  "rumboost", "lin_rumboost"] # 
-    models = ["dcm_all_data", "dcm"]
-    # models = ["dcm", "rumboost", "lin_rumboost"]
+    models = ["dcm", "dcm_all_data"] # "rumboost_all_data", "lin_rumboost_all_data",  "rumboost", "lin_rumboost", 
     # intensity_cutoffs = [20, 0]
     intensity_cutoffs = [20]
 

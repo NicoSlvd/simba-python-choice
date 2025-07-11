@@ -59,11 +59,11 @@ def run_estimation(
         + dict_betas["b_secondary_education"] * secondary_education
         + dict_betas["b_tertiary_education"] * tertiary_education
         # + dict_betas["b_rural_work_1520"] * rural_work_1520
-        + dict_betas["b_hh_income_na"] * hh_income_na
-        + dict_betas["b_hh_income_8000_or_less"] * hh_income_less_than_2000
-        + dict_betas["b_hh_income_8000_or_less"] * hh_income_2000_to_4000
-        + dict_betas["b_hh_income_8000_or_less"] * hh_income_4001_to_6000
-        + dict_betas["b_hh_income_8000_or_less"] * hh_income_6001_to_8000
+        # + dict_betas["b_hh_income_na"] * hh_income_na
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_less_than_2000
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_2000_to_4000
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_4001_to_6000
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_6001_to_8000
         + dict_betas["b_number_of_children"] * number_of_children_not_NA
         + dict_betas["b_number_of_children_NA"] * number_of_children_NA
         + dict_betas["b_single_household"] * single_household
@@ -106,11 +106,11 @@ def run_estimation(
         + dict_betas["b_secondary_education"] * secondary_education
         + dict_betas["b_tertiary_education"] * tertiary_education
         # + dict_betas["b_rural_work_1520"] * rural_work_1520
-        + dict_betas["b_hh_income_na"] * hh_income_na
-        + dict_betas["b_hh_income_8000_or_less"] * hh_income_less_than_2000
-        + dict_betas["b_hh_income_8000_or_less"] * hh_income_2000_to_4000
-        + dict_betas["b_hh_income_8000_or_less"] * hh_income_4001_to_6000
-        + dict_betas["b_hh_income_8000_or_less"] * hh_income_6001_to_8000
+        # + dict_betas["b_hh_income_na"] * hh_income_na
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_less_than_2000
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_2000_to_4000
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_4001_to_6000
+        # + dict_betas["b_hh_income_8000_or_less"] * hh_income_6001_to_8000
         + dict_betas["b_number_of_children"] * number_of_children_not_NA
         # + dict_betas["b_number_of_children_NA"] * number_of_children_NA #P-value > 0.8
         + dict_betas["b_single_household"] * single_household
@@ -147,8 +147,9 @@ def run_estimation(
         # + dict_betas["b_nb_of_cars_NA"] * nb_of_cars_NA #P-value > 0.2
         + dict_betas["b_nb_of_cars_not_NA"] * nb_of_cars_not_NA
         # + dict_betas["b_car_avail_NA"] * car_avail_NA
-        + dict_betas["b_car_avail_not_NA_always"] * car_avail_not_NA_always
-        + dict_betas["b_car_avail_not_NA_on_demand"] * car_avail_not_NA_on_demand
+        # + dict_betas["b_car_avail_not_NA_always"] * car_avail_not_NA_always
+        # + dict_betas["b_car_avail_not_NA_on_demand"] * car_avail_not_NA_on_demand
+        + dict_betas["b_car_avail_not_NA"] * car_avail_not_NA
         # + dict_betas["b_has_driving_licence_NA"] * has_driving_licence_NA #P-value > 0.2
         # + dict_betas["b_has_driving_licence_not_NA"] * has_driving_licence_not_NA #P-value > 0.8
         + dict_betas["b_work_time_flexibility_NA"] * work_time_flexibility_NA
