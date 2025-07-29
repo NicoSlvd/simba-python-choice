@@ -4,4 +4,5 @@ __pycache__/*
 2015_2020_2021/*
 2015_2020_2021
 data/input
+persons.csv
 src/simba/mobi/choice/data/output/homeoffice/*
