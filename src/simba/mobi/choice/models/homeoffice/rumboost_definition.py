@@ -140,8 +140,7 @@ def define_variables(
         "nb_of_cars"
     ]
     new_df["car_avail_NA"] = (df_zp["car_avail"] < 0).astype(int)
-    new_df["car_avail_not_NA_always"] = (df_zp["car_avail"] == 1).astype(int)
-    new_df["car_avail_not_NA_on_demand"] = (df_zp["car_avail"] == 2).astype(int)
+    new_df["car_avail_not_NA"] = (df_zp["car_avail"] == 1).astype(int) + (df_zp["car_avail"] == 2).astype(int)
     new_df["has_driving_licence_NA"] = (df_zp["has_driving_licence"] < 0).astype(int)
     new_df["has_driving_licence_not_NA"] = (df_zp["has_driving_licence"] == 1).astype(
         int
@@ -169,15 +168,15 @@ def define_variables(
 
     # pt travel times and number of transfers
     new_df["pt_travel_times_not_NA"] = (
-        df_zp["pt_travel_times"] * (df_zp["pt_travel_times"] >= 0.0) / 60.0
+        df_zp["pt_travel_times"] * (df_zp["pt_travel_times"] >= 0.0) / 3600.0
     )
     new_df["pt_travel_times_NA"] = (df_zp["pt_travel_times"] < 0.0).astype(int)
     new_df["pt_access_times_not_NA"] = (
-        df_zp["pt_access_times"] * (df_zp["pt_access_times"] >= 0.0) / 60.0
+        df_zp["pt_access_times"] * (df_zp["pt_access_times"] >= 0.0) / 3600.0
     )
     new_df["pt_access_times_NA"] = (df_zp["pt_access_times"] < 0.0).astype(int)
     new_df["pt_egress_times_not_NA"] = (
-        df_zp["pt_egress_times"] * (df_zp["pt_egress_times"] >= 0.0) / 60.0
+        df_zp["pt_egress_times"] * (df_zp["pt_egress_times"] >= 0.0) / 3600.0
     )
     new_df["pt_egress_times_NA"] = (df_zp["pt_egress_times"] < 0.0).astype(int)
     new_df["n_transfers_not_NA"] = df_zp["n_transfers"] * (df_zp["n_transfers"] >= 0.0)
@@ -209,8 +208,7 @@ def define_variables(
                 "nb_of_cars_NA",
                 "nb_of_cars_not_NA",
                 "car_avail_NA",
-                "car_avail_not_NA_always",
-                "car_avail_not_NA_on_demand",
+                "car_avail_not_NA",
                 "has_driving_licence_NA",
                 "has_driving_licence_not_NA",
                 "work_time_flexibility_NA",
@@ -233,6 +231,11 @@ def define_variables(
                 "n_transfers_NA",
                 "pt_tt_or_transfers_NA",
                 "business_sector_agriculture_21",
+                "hh_income_na",
+                "hh_income_less_than_2000",
+                "hh_income_2000_to_4000",
+                "hh_income_4001_to_6000",
+                "hh_income_6001_to_8000",
             ]
         )
     elif remove_corr_vars:
@@ -257,7 +260,12 @@ def define_variables(
                 "has_driving_licence_NA",
                 "has_driving_licence_not_NA",
                 "number_of_children_NA",
-                "typology_home_urban"
+                "typology_home_urban",
+                "hh_income_na",
+                "hh_income_less_than_2000",
+                "hh_income_2000_to_4000",
+                "hh_income_4001_to_6000",
+                "hh_income_6001_to_8000",
             ]
         )
 
